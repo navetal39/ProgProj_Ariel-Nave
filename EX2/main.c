@@ -1,3 +1,13 @@
+/*
+ * TODO:
+ * Finish implementation main_aux.c
+ * Finish documentation main_aux.h
+ * -	Update code in main.c to check everything done by main_aux was
+ * 		done correctly and without errors, and act accordingly if it is
+ * 		not the case
+ * Debug, debug, debug
+*/
+
 #include "SSPoint.h"
 #include "SSBPriorityQueue.h"
 #include "main_aux.h"
@@ -40,7 +50,7 @@ int main(int argc, char* argv)
 		{
 			printf(", ");
 		}else{
-			printf("\n"); // TODO: figure out if I need to add a \n or not.
+			printf("\n");
 		}
 	}
 	/* Cleaning up: */
