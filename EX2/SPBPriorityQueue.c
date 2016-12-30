@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
 
 
 struct sp_bp_queue_t{
@@ -20,9 +21,7 @@ SPBPQueue* spBPQueueCreate(int maxSize){
 	new_queue->maxSize = maxSize;
 	new_queue->size = 0;
 	new_queue->arr = (BPQueueElement*) malloc(maxSize * sizeof(BPQueueElement));
-	for (i=0; i<maxSize; ++i){
-		new_queue->arr[i] = NULL;
-	}
+	memset(new_queue->arr, '\0', maxSize * sizeof(BPQueueElement));
 	if (new_queue->arr == NULL) {
 		return NULL;
 	}
@@ -53,9 +52,7 @@ void spBPQueueDestroy(SPBPQueue* source){
 
 void spBPQueueClear(SPBPQueue* source){
 	int i;
-	for (i=0; i<maxSize; ++i){
-		source->arr[i] = NULL;
-	}
+	memset(source->arr, '\0', (source->maxSize) * sizeof(BPQueueElement));
 }
 
 int spBPQueueSize(SPBPQueue* source){
@@ -70,44 +67,44 @@ int spBPQueueGetMaxSize(SPBPQueue* source){
 
 SP_BPQUEUE_MSG spBPQueueEnqueue(SPBPQueue* source, int index, double value){
 	assert(source != NULL);
-	if (if (source->maxSize == 0)){
+	if (source->maxSize == 0){
 		return SP_BPQUEUE_FULL;
 	}
 	int i;
 	int temp_index = index;
 	double temp_value = value;
-	int tmp_temp_index;      ///// used only for swap
-	double tmp_temp_value;   ///// used only for swap
+	int temp_temp_index;      ///// used only for swap
+	double temp_temp_value;   ///// used only for swap
 	if (source->size == source->maxSize){
 		for (i=0; i < source->size; ++i){
 			if ((source->arr[i]).value > temp_value){
 				/// this is swap between the values of the "waiting element" and the current element in the array
-				tmp_temp_index = temp_index;
-				tmp_temp_value = temp_value;
+				temp_temp_index = temp_index;
+				temp_temp_value = temp_value;
 				temp_index = (source->arr[i]).index;
 				temp_value = (source->arr[i]).value;
 				(source->arr[i]).index = temp_temp_index;
 				(source->arr[i]).value = temp_temp_value;
 			}
 		}
-		++size;
+		++(source->size);
 		return SP_BPQUEUE_FULL; //////////////////////////////////////////////////////////////////////maybe should return success
 	}
 
 	for (i=0; i < source->size; ++i){
 		if ((source->arr[i]).value > temp_value){
 				/// this is swap between the values of the "waiting element" and the current element in the array
-				tmp_temp_index = temp_index;
-				tmp_temp_value = temp_value;
+				temp_temp_index = temp_index;
+				temp_temp_value = temp_value;
 				temp_index = (source->arr[i]).index;
 				temp_value = (source->arr[i]).value;
 				(source->arr[i]).index = temp_temp_index;
 				(source->arr[i]).value = temp_temp_value;
 		}
 	}
-	++size;
-	(source->arr[size]).index = temp_index;
-	(source->arr[size]).value = temp_value;
+	++(source->size);
+	(source->arr[source->size]).index = temp_index;
+	(source->arr[source->size]).value = temp_value;
 	return SP_BPQUEUE_SUCCESS;
 }
 
@@ -126,7 +123,7 @@ SP_BPQUEUE_MSG spBPQueuePeek(SPBPQueue* source, BPQueueElement* res){
 	if (source->size == 0){
 		return SP_BPQUEUE_EMPTY;
 	}
-	res = source->arr[(source->size) -1];
+	res = &(source->arr[(source->size) -1]);
 	return SP_BPQUEUE_SUCCESS;
 }
 
@@ -135,7 +132,7 @@ SP_BPQUEUE_MSG spBPQueuePeekLast(SPBPQueue* source, BPQueueElement* res){
 	if (source->size == 0){
 		return SP_BPQUEUE_EMPTY;
 	}
-	res = source->arr[0];
+	res = &(source->arr[0]);
 	return SP_BPQUEUE_SUCCESS;
 }
 
