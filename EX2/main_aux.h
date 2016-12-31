@@ -13,6 +13,7 @@
  * - index(P) = *index
  *
  * @param dim - the number of coordinates
+ * @param index - a pointer to the wanted index for the point
  * @assert (dim > 0)
  * @return
  * NULL if an error occures while reading or making the point
@@ -34,11 +35,31 @@ SPPoint* readPoint (int dim, int* index);
  *
  * @param ammount - the ammount of points to be read
  * @param dim - the number of coordinates
+ * @param index - a pointer to the wanted index for the first point to be made
  * @assert (dim > 0)
  * @return
  * NULL if an error occures while reading or making the point
  * Others a pointer to a point
  */
 SPPoint** readPoints(int ammount, int dim, int* index);
+/**
+ * Finds the indexes of the k nearest points from "points" to "target", with all of
+ * them being points of dimension dim and len(points)=ammount. 
+ *
+ * Given an array of pointers to the points, a pointer to the target point, the
+ * ammount pf points, dimension of the points, wanted ammount of points to be found
+ * the functions returns an array of indexes (integers) [i_1,...,i_n]
+ * [P(1),P(2),...,P(ammount)], such that:
+ * - for every two indexes i and j, such that i is in [i_1,...,i_n] and j isn't, 
+ * 	 the point with index i is closer to the target point than the point with index j
+ *
+ * @param points - an array of pointers to points form which the k nearest will be found
+ * @param target - a pointer to the point from which the distances will be calculated
+ * @param ammount - the ammount of points to be read
+ * @param dim - the number of coordinates
+ * @param k - the ammount of points to be found
+ * @return
+ * an array of K integers
+ */
 find_KNN(SPPoint** points, SPPoint* target, int ammount, int dim, int k);
 void cleanPointsArray(SPPoint** array, int arrayLength);
