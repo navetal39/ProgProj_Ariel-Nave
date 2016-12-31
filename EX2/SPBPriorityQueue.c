@@ -87,7 +87,6 @@ SP_BPQUEUE_MSG spBPQueueEnqueue(SPBPQueue* source, int index, double value){
 				(source->arr[i]).value = temp_temp_value;
 			}
 		}
-		++(source->size);
 		return SP_BPQUEUE_FULL; //////////////////////////////////////////////////////////////////////maybe should return success
 	}
 
