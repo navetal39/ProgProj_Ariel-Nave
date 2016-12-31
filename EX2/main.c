@@ -1,10 +1,7 @@
 /*
  * TODO:
- * Finish implementation main_aux.c
- * Finish documentation main_aux.h
- * -	Update code in main.c to check everything done by main_aux was
- * 		done correctly and without errors, and act accordingly if it is
- * 		not the case
+ * Figure out what to do with the returned values from the queue functions in main_aux
+ * Test, test test
  * Debug, debug, debug
 */
 
