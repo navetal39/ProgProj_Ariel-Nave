@@ -76,11 +76,11 @@ int* find_KNN(SPPoint** points, SPPoint* target, int ammount, int dim, int k)
 	spBPQueueDestroy(queue);
 	return knn;
 }
-void cleanPointsArray(SPPoint** array, int arrayLength)
+void destroyPointsArray(SPPoint** pointArray, int arrayLength)
 {
 	int i;
 	for(i = 0; i < arrayLength; ++i)
 	{
-		spPointDestroy(array[i]);
+		spPointDestroy(pointArray[i]);
 	}
 }

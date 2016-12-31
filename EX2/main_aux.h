@@ -62,4 +62,13 @@ SPPoint** readPoints(int ammount, int dim, int* index);
  * an array of K integers
  */
 find_KNN(SPPoint** points, SPPoint* target, int ammount, int dim, int k);
-void cleanPointsArray(SPPoint** array, int arrayLength);
+/**
+ * Destroys all the points pointed at by a pointer in the array of point pointers "pointArray"
+ * 
+ * Given an array of pointers to points and the length of said array, the function will destroy
+ * all the points pointed at by a pointer in the points pointer array using spPointDestroy()
+ *
+ * @param pointArray - the array of pointers to the points to be destroyed
+ * @param arraylength - the length of the point pointers array
+ */
+void destroyPointsArray(SPPoint** pointArray, int arrayLength);

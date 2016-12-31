@@ -53,5 +53,5 @@ int main(int argc, char* argv)
 	/* Cleaning up: */
 	free(nearest);
 	spPointDestroy(targetPT);
-	cleanPointsArray(pointsArray, n); ///////////
+	destroyPointsArray(pointsArray, n); ///////////
 }
