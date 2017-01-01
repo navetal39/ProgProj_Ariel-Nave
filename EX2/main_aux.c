@@ -75,6 +75,7 @@ int* find_KNN(SPPoint** points, SPPoint* target, int ammount, int k)
 	}
 	printf("destroying!\n");
 	spBPQueueDestroy(queue);
+	printf("returning!\n");
 	return knn;
 }
 void destroyPointsArray(SPPoint** pointArray, int arrayLength)
