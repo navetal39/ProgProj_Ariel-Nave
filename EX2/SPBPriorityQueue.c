@@ -4,6 +4,11 @@
 #include <assert.h>
 #include <string.h>
 
+struct sp_bp_queue_t{
+	BPQueueElement* arr;
+	int maxSize;
+	int size;
+};
 
 SPBPQueue* spBPQueueCreate(int maxSize) {
 	SPBPQueue* new_queue;
@@ -58,7 +63,9 @@ int spBPQueueGetMaxSize(SPBPQueue* source) {
 }
 
 SP_BPQUEUE_MSG spBPQueueEnqueue(SPBPQueue* source, int index, double value) {
-	assert(source != NULL);
+	if(source == NULL){
+		return SP_BPQUEUE_INVALID_ARGUMENT;
+	}
 	if (source->maxSize == 0) {
 		return SP_BPQUEUE_FULL;
 	}
@@ -67,11 +74,10 @@ SP_BPQUEUE_MSG spBPQueueEnqueue(SPBPQueue* source, int index, double value) {
 	double temp_value = value;
 	int temp_temp_index;      ///// used only for swap
 	double temp_temp_value;   ///// used only for swap
-
 	for (i = 0; i < source->size; ++i) {
-		b1 = ((source->arr[i]).value > temp_value);
-		b2 = ((source->arr[i]).value >= temp_value);
-		b3 = ((source->arr[i]).index > temp_index);
+		b1 = ((source->arr[i]).value < temp_value);
+		b2 = ((source->arr[i]).value == temp_value);
+		b3 = ((source->arr[i]).index < temp_index);
 		if (b1 || (b2 && b3)) {
 			/// this is swap between the values of the "waiting element" and the current element in the array
 			temp_temp_index = temp_index;
@@ -88,6 +94,13 @@ SP_BPQUEUE_MSG spBPQueueEnqueue(SPBPQueue* source, int index, double value) {
 		(source->arr[source->size]).value = temp_value;
 		++(source->size);
 		inserted = 1; // if this happened, the queue wasen't full so we must have succeeded in the insertion
+	}else{	// we'd want to put back the values we're holding in the temp variables...
+		for(i=0; i<(source->size)-1; ++i){
+			source->arr[i].index = source->arr[i+1].index;
+			source->arr[i].value = source->arr[i+1].value;
+		}
+		source->arr[source->size-1].index = temp_index;
+		source->arr[source->size-1].value = temp_value;
 	}
 	if(inserted){
 		return SP_BPQUEUE_SUCCESS;
@@ -97,7 +110,9 @@ SP_BPQUEUE_MSG spBPQueueEnqueue(SPBPQueue* source, int index, double value) {
 }
 
 SP_BPQUEUE_MSG spBPQueueDequeue(SPBPQueue* source) {
-	assert(source != NULL);
+	if(source == NULL){
+		return SP_BPQUEUE_INVALID_ARGUMENT;
+	}
 	if (source->size == 0) {
 		return SP_BPQUEUE_EMPTY;
 	}
@@ -106,20 +121,9 @@ SP_BPQUEUE_MSG spBPQueueDequeue(SPBPQueue* source) {
 }
 
 SP_BPQUEUE_MSG spBPQueuePeek(SPBPQueue* source, BPQueueElement* res) {
-	assert(source != NULL && source->arr != NULL);
-	if (source->size == 0) {
-		return SP_BPQUEUE_EMPTY;
+	if(source == NULL || source->arr == NULL){
+		return SP_BPQUEUE_INVALID_ARGUMENT;
 	}
-	*res = source->arr[0];
-	if (res != NULL) { // Does not matter, only here to make pedantic errors agree that we used res
-		return SP_BPQUEUE_SUCCESS;
-	} else {
-		return SP_BPQUEUE_SUCCESS;
-	}
-}
-
-SP_BPQUEUE_MSG spBPQueuePeekLast(SPBPQueue* source, BPQueueElement* res) {
-	assert(source != NULL && source->arr != NULL);
 	if (source->size == 0) {
 		return SP_BPQUEUE_EMPTY;
 	}
@@ -131,7 +135,22 @@ SP_BPQUEUE_MSG spBPQueuePeekLast(SPBPQueue* source, BPQueueElement* res) {
 	}
 }
 
-double spBPQueueMinValue(SPBPQueue* source) {
+SP_BPQUEUE_MSG spBPQueuePeekLast(SPBPQueue* source, BPQueueElement* res) {
+	if(source == NULL || source->arr == NULL){
+		return SP_BPQUEUE_INVALID_ARGUMENT;
+	}
+	if (source->size == 0) {
+		return SP_BPQUEUE_EMPTY;
+	}
+	*res = source->arr[0];
+	if (res != NULL) { // Does not matter, only here to make pedantic errors agree that we used res
+		return SP_BPQUEUE_SUCCESS;
+	} else {
+		return SP_BPQUEUE_SUCCESS;
+	}
+}
+
+double spBPQueueMaxValue(SPBPQueue* source) {
 	assert(source != NULL && source->arr != NULL);
 	if (source->size == 0) {
 		return SP_BPQUEUE_EMPTY;
@@ -139,7 +158,7 @@ double spBPQueueMinValue(SPBPQueue* source) {
 	return (source->arr[0]).value;
 }
 
-double spBPQueueMaxValue(SPBPQueue* source) {
+double spBPQueueMinValue(SPBPQueue* source) {
 	assert(source != NULL && source->arr != NULL);
 	if (source->size == 0) {
 		return SP_BPQUEUE_EMPTY;
