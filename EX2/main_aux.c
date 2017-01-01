@@ -56,7 +56,7 @@ int* find_KNN(SPPoint** points, SPPoint* target, int ammount, int k)
 	double distance;
 	SPBPQueue* queue =  spBPQueueCreate(k);
 	SPPoint* curPoint;
-	BPQueueElement* tempElement = NULL;
+	BPQueueElement* tempElement = (BPQueueElement*)malloc(sizeof(BPQueueElement));
 
 	for(i=0; i<ammount; ++i)
 	{
@@ -64,6 +64,7 @@ int* find_KNN(SPPoint** points, SPPoint* target, int ammount, int k)
 		distance = spPointL2SquaredDistance(target, curPoint);
 		spBPQueueEnqueue(queue, curPoint->index, distance);
 	}
+	printf("%d\n", queue->size);
 	for(i=0; i<(queue->size); ++i)
 	{
 		printf("peeking...");
@@ -75,6 +76,7 @@ int* find_KNN(SPPoint** points, SPPoint* target, int ammount, int k)
 	}
 	printf("destroying!\n");
 	spBPQueueDestroy(queue);
+	free(tempElement);
 	printf("returning!\n");
 	return knn;
 }
