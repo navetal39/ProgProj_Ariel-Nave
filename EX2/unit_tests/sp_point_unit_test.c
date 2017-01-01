@@ -88,7 +88,7 @@ bool pointCopyTest() {
 	int dim;
 	int index;
 	double* data;
-	SPPoint* created_point, coppied_point;
+	SPPoint *created_point, *coppied_point;
 	for (i = 0; i < 50; i++) {
 		index = rand();
 		dim = rand() % 50;
@@ -135,17 +135,17 @@ bool pointL2DistanceTest() {
 	/*  the idea : I assume that if it works with these numbers it will work with any random numbers
 		and it makes the test much more readable and easy to understand
 	*/
-	double data1[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
-	double data2[6] = {5.0, 4.0, 3.0, 2.0, 1.0, 0.0}
-	double data3[6] = {1.0, 1.0, 1.0, -1.0, 0.0, 1.123}
-	int dim = 6
+	double data1[6] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+	double data2[6] = {5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
+	double data3[6] = {1.0, 1.0, 1.0, -1.0, 0.0, 1.123};
+	int dim = 6;
 	int index_1 = 12;
 	int index_2 = 1;
 	int index_3 = 3;
 
-	SPPoint point_check_1 = spPointCreate((double*)data1, dim, index_1);
-	SPPoint point_check_2 = spPointCreate((double*)data2, dim, index_2);
-	SPPoint point_check_3 = spPointCreate((double*)data3, dim, index_3);
+	SPPoint *point_check_1 = spPointCreate((double*)data1, dim, index_1);
+	SPPoint *point_check_2 = spPointCreate((double*)data2, dim, index_2);
+	SPPoint *point_check_3 = spPointCreate((double*)data3, dim, index_3);
 
 	ASSERT_TRUE(spPointL2SquaredDistance(point_check_1, point_check_2) == 55.0);
 	ASSERT_TRUE(spPointL2SquaredDistance(point_check_3, point_check_2) == 40.261129);
