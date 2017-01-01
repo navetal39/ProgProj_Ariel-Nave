@@ -19,12 +19,6 @@
  *
  */
 
-/** Point struct definition **/
-struct sp_point_t {
-	int index;
-	int dim;
-	double* data;
-};
 /** Type for defining the point **/
 typedef struct sp_point_t SPPoint;
 

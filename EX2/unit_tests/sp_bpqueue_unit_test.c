@@ -23,6 +23,7 @@ static bool testQueueCopy() {
 	SPBPQueue* created_queue = spBPQueueCreate(3);
 	SPBPQueue* coppied_queue = spBPQueueCopy(created_queue);
 	ASSERT_TRUE(coppied_queue != NULL && spBPQueueGetMaxSize(coppied_queue) == 3 && spBPQueueSize(coppied_queue) == 0);
+	spBPQueueDestroy(coppied_queue);
 	spBPQueueEnqueue(created_queue, 8, 1.0);
 	spBPQueueEnqueue(created_queue, 2, 3.0);
 	spBPQueueEnqueue(created_queue, 1, 1.12);

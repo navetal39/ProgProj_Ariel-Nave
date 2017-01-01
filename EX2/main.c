@@ -22,7 +22,6 @@ int main()
 	/* Assertions, etc: */
 	if(scanf("%d %d %d", &n, &d, &k) != 3)
 	{
-		printf("ERROR: Expected 3 integer values seperated by spaces. Exiting...");
 		return -1;
 	}
 	assert(n>=1);
@@ -32,13 +31,11 @@ int main()
 	pointsArray = readPoints(n,d, pointsCount);
 	if(pointsArray == NULL)
 	{
-		printf("ERROR: An error occured while trying to read points. Exiting...");
 		return -1;
 	}
 	targetPT = readPoint(d, 0);
 	if(targetPT == NULL)
 	{
-		printf("ERROR: An error occured while trying to read target point. Exiting...");
 		return -1;
 	}
 	/* Calculating: */
@@ -57,5 +54,6 @@ int main()
 	free(nearest);
 	spPointDestroy(targetPT);
 	destroyPointsArray(pointsArray, n);
+	free(pointsArray);
 	return 0;
 }

@@ -3,6 +3,11 @@
 #include <stdio.h>
 #include <assert.h>
 
+struct sp_point_t {
+	int index;
+	int dim;
+	double* data;
+};
 
 SPPoint* spPointCreate(double* data, int dim, int index) {
 	SPPoint* new_point = NULL;

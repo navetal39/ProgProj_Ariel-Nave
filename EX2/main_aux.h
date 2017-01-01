@@ -56,6 +56,7 @@ SPPoint** readPoints(int ammount, int dim, int index);
  * @param target - a pointer to the point from which the distances will be calculated
  * @param ammount - the ammount of points to be read
  * @param k - the ammount of points to be found
+ * @assert (1 <= k && k <= ammount)
  * @return
  * an array of K integers
  */
