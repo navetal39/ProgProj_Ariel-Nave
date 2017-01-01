@@ -6,7 +6,7 @@
 
 
 SPBPQueue* spBPQueueCreate(int maxSize){
-	SPBPQueue* new_queue = NULL;
+	SPBPQueue* new_queue;
 	new_queue = (SPBPQueue*) malloc(sizeof(*new_queue));
 	if (new_queue == NULL) {
 		return NULL;
@@ -14,10 +14,10 @@ SPBPQueue* spBPQueueCreate(int maxSize){
 	new_queue->maxSize = maxSize;
 	new_queue->size = 0;
 	new_queue->arr = (BPQueueElement*) malloc(maxSize * sizeof(BPQueueElement));
-	memset(new_queue->arr, '\0', maxSize * sizeof(BPQueueElement));
 	if (new_queue->arr == NULL) {
 		return NULL;
 	}
+	memset(&(new_queue->arr), '\0', maxSize * sizeof(BPQueueElement));
 	return new_queue;
 }
 

@@ -59,7 +59,7 @@ SPPoint** readPoints(int ammount, int dim, int index);
  * @return
  * an array of K integers
  */
-int* find_KNN(SPPoint* points[], SPPoint* target, int ammount, int k);
+int* find_KNN(SPPoint** points, SPPoint* target, int ammount, int k);
 /**
  * Destroys all the points pointed at by a pointer in the array of point pointers "pointArray"
  * 

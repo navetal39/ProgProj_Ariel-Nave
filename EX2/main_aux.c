@@ -49,7 +49,7 @@ SPPoint** readPoints(int ammount, int dim, int index)
 		return NULL;
 	}
 }
-int* find_KNN(SPPoint* points[], SPPoint* target, int ammount, int k)
+int* find_KNN(SPPoint** points, SPPoint* target, int ammount, int k)
 {
 	int i;
 	int* knn = (int*)malloc(k*sizeof(int));
@@ -66,10 +66,14 @@ int* find_KNN(SPPoint* points[], SPPoint* target, int ammount, int k)
 	}
 	for(i=0; i<(queue->size); ++i)
 	{
+		printf("peeking...");
 		spBPQueuePeek(queue, tempElement);
+		printf("putting %d in knn[%d]...", tempElement->index, i);
 		knn[i] = tempElement->index;
+		printf("dequeueing...\n");
 		spBPQueueDequeue(queue);
 	}
+	printf("destroying!\n");
 	spBPQueueDestroy(queue);
 	return knn;
 }
