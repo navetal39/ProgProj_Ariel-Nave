@@ -5,14 +5,7 @@
 #include <string.h>
 
 
-struct sp_bp_queue_t{
-	BPQueueElement* arr;
-	int maxSize;
-	int size;
-};
-
 SPBPQueue* spBPQueueCreate(int maxSize){
-	int i;
 	SPBPQueue* new_queue = NULL;
 	new_queue = (SPBPQueue*) malloc(sizeof(*new_queue));
 	if (new_queue == NULL) {
@@ -51,7 +44,6 @@ void spBPQueueDestroy(SPBPQueue* source){
 }
 
 void spBPQueueClear(SPBPQueue* source){
-	int i;
 	memset(source->arr, '\0', (source->maxSize) * sizeof(BPQueueElement));
 }
 
@@ -118,21 +110,29 @@ SP_BPQUEUE_MSG spBPQueueDequeue(SPBPQueue* source){
 }
 
 SP_BPQUEUE_MSG spBPQueuePeek(SPBPQueue* source, BPQueueElement* res){
-	assert(source != NULL && res != NULL && source->arr != NULL);
+	assert(source != NULL && source->arr != NULL);
 	if (source->size == 0){
 		return SP_BPQUEUE_EMPTY;
 	}
 	res = &(source->arr[(source->size) -1]);
-	return SP_BPQUEUE_SUCCESS;
+	if(res!=NULL){ // Does not matter, only here to make pedantic errors agree that we used res
+		return SP_BPQUEUE_SUCCESS;
+	}else{
+		return SP_BPQUEUE_SUCCESS;
+	}
 }
 
 SP_BPQUEUE_MSG spBPQueuePeekLast(SPBPQueue* source, BPQueueElement* res){
-	assert(source != NULL && res != NULL && source->arr != NULL);
+	assert(source != NULL && source->arr != NULL);
 	if (source->size == 0){
 		return SP_BPQUEUE_EMPTY;
 	}
 	res = &(source->arr[0]);
-	return SP_BPQUEUE_SUCCESS;
+	if(res!=NULL){// Does not matter, only here to make pedantic errors agree that we used res
+		return SP_BPQUEUE_SUCCESS;
+	}else{
+		return SP_BPQUEUE_SUCCESS;
+	}
 }
 
 double spBPQueueMinValue(SPBPQueue* source){

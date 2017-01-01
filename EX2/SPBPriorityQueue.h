@@ -8,14 +8,21 @@
  * TODO Complete documentation
  */
 
-
-/** type used to define Bounded priority queue **/
-typedef struct sp_bp_queue_t SPBPQueue;
-
 typedef struct sp_bpq_element_t {
 	int index;
 	double value;
 } BPQueueElement;
+
+/** Point struct definition **/
+struct sp_bp_queue_t{
+	BPQueueElement* arr;
+	int maxSize;
+	int size;
+};
+/** type used to define Bounded priority queue **/
+typedef struct sp_bp_queue_t SPBPQueue;
+
+
 
 /** type for error reporting **/
 typedef enum sp_bp_queue_msg_t {

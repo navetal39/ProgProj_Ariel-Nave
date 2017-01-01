@@ -3,12 +3,6 @@
 #include <stdio.h>
 #include <assert.h>
 
-struct sp_point_t {
-	int index;
-	int dim;
-	double* data;
-};
-
 
 SPPoint* spPointCreate(double* data, int dim, int index) {
 	SPPoint* new_point = NULL;
@@ -65,6 +59,8 @@ double spPointGetAxisCoor(SPPoint* point, int axis) {
 	return (point->data)[axis];
 }
 double spPointL2SquaredDistance(SPPoint* p, SPPoint* q) {
+	assert(p != NULL);
+	assert (q != NULL);
 	assert (p != NULL && q != NULL && p->dim == q->dim);
 	double current_dist ;
 

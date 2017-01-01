@@ -5,13 +5,14 @@
  * Debug, debug, debug
 */
 
-#include "SSPoint.h"
-#include "SSBPriorityQueue.h"
+#include "SPPoint.h"
+#include "SPBPriorityQueue.h"
 #include "main_aux.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
-int main(int argc, char* argv)
+int main()
 {
 	/* Declerations: */
 	int n, d, k, index, pointsCount = 0;
@@ -19,7 +20,7 @@ int main(int argc, char* argv)
 	SPPoint** pointsArray;
 	SPPoint* targetPT;
 	/* Assertions, etc: */
-	if(scanf("%d %d %d", &n. &d, &k) != 3)
+	if(scanf("%d %d %d", &n, &d, &k) != 3)
 	{
 		printf("ERROR: Expected 3 integer values seperated by spaces. Exiting...");
 		return -1;
@@ -28,18 +29,20 @@ int main(int argc, char* argv)
 	assert(d>=1);
 	assert(1<=k && k<=n);
 	/* Point data collection: */
-	pointsArray = readPoints(n,d, &pointsCount);
-	if(pointsArray = NULL)
+	pointsArray = readPoints(n,d, pointsCount);
+	if(pointsArray == NULL)
 	{
 		printf("ERROR: An error occured while trying to read points. Exiting...");
+		return -1;
 	}
-	targetPT = readPoint(d);
+	targetPT = readPoint(d, 0);
 	if(targetPT == NULL)
 	{
 		printf("ERROR: An error occured while trying to read target point. Exiting...");
+		return -1;
 	}
 	/* Calculating: */
-	nearest = find_KNN(pointsArray, targetPT, n, d, k); ////////////
+	nearest = find_KNN(pointsArray, targetPT, n, k);
 	for(index = 0; index < k; ++index)
 	{
 		printf("%d", nearest[index]);
@@ -53,5 +56,6 @@ int main(int argc, char* argv)
 	/* Cleaning up: */
 	free(nearest);
 	spPointDestroy(targetPT);
-	destroyPointsArray(pointsArray, n); ///////////
+	destroyPointsArray(pointsArray, n);
+	return 0;
 }

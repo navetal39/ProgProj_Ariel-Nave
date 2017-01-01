@@ -1,41 +1,38 @@
-#include "SSPoint.h"
-#include "SSBPriorityQueue.h"
+#include "SPPoint.h"
+#include "SPBPriorityQueue.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
-SPPoint* readPoint (int dim, int* index)
+SPPoint* readPoint (int dim, int index)
 {
+	printf("reading point of dim %d... index: %d\n", dim, index);
 	assert(dim>0);
 	double* data =(double*) malloc(dim * sizeof(double));
 	int i, allGood = 1;
 	SPPoint* retPoint = NULL;
 	for(i = 0; i < dim && allGood; ++i)
 	{
-		if(scanf("%f",  &data[i]) != 1)
+		if(scanf("%lf",  &data[i]) != 1)
 		{
 			allGood--;
 		}
 	}
 	if(allGood)
 	{
-		retPoint = spPointCreate(data, dim, ++(*index)); 
+		retPoint = spPointCreate(data, dim, index);
 	}
 	free(data);
-	if(retPoint == NULL)
-	{
-		--(*index);
-	}
 	return retPoint;
 }
-SPPoint** readPoints(int ammount, int dim, int* index);
+SPPoint** readPoints(int ammount, int dim, int index)
 {
 	assert(dim>0);
 	int i, j, allGood = 1;
-	int origIndex = *index;
-	SPPoint** points = (SPPoint**) malloc(ammount*sizeOf(SPPoint*));
+	SPPoint** points = (SPPoint**) malloc(ammount*sizeof(SPPoint*));
 	for(i = 0; i < ammount && allGood; ++i)
 	{
-		points[i] = readPoint(dim, index);
+		points[i] = readPoint(dim, ++index);
 		if(points[i] == NULL)
 		{
 			for(j = 0; j<i; ++j)
@@ -49,25 +46,25 @@ SPPoint** readPoints(int ammount, int dim, int* index);
 	{
 		return points;
 	}else{
-		*index = origIndex;
 		return NULL;
 	}
 }
-int* find_KNN(SPPoint** points, SPPoint* target, int ammount, int dim, int k)
+int* find_KNN(SPPoint* points[], SPPoint* target, int ammount, int k)
 {
 	int i;
 	int* knn = (int*)malloc(k*sizeof(int));
 	double distance;
-	SPBPQueue* queue = spBPQueueCreate(k);
+	SPBPQueue* queue =  spBPQueueCreate(k);
 	SPPoint* curPoint;
-	BPQueueElement* tempElement;
+	BPQueueElement* tempElement = NULL;
+
 	for(i=0; i<ammount; ++i)
 	{
 		curPoint = points[i];
-		distance = spPointL2SquaredDistance)(target, curPoint);
-		spBPQueueEnqueue(queue, (points[i])->index, distance);
+		distance = spPointL2SquaredDistance(target, curPoint);
+		spBPQueueEnqueue(queue, curPoint->index, distance);
 	}
-	for(i=0; i<queue->size; ++i)
+	for(i=0; i<(queue->size); ++i)
 	{
 		spBPQueuePeek(queue, tempElement);
 		knn[i] = tempElement->index;
