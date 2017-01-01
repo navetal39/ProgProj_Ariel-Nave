@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-SPBPQueue* spBPQueueCreate(int maxSize){
+SPBPQueue* spBPQueueCreate(int maxSize) {
 	SPBPQueue* new_queue;
 	new_queue = (SPBPQueue*) malloc(sizeof(*new_queue));
 	if (new_queue == NULL) {
@@ -14,14 +14,14 @@ SPBPQueue* spBPQueueCreate(int maxSize){
 	new_queue->maxSize = maxSize;
 	new_queue->size = 0;
 	new_queue->arr = (BPQueueElement*) malloc(maxSize * sizeof(BPQueueElement));
-	memset(&(new_queue->arr), '\0', maxSize * sizeof(BPQueueElement));
 	if (new_queue->arr == NULL) {
 		return NULL;
 	}
+	memset(new_queue->arr, '\0', maxSize * sizeof(BPQueueElement));
 	return new_queue;
 }
 
-SPBPQueue* spBPQueueCopy(SPBPQueue* source){
+SPBPQueue* spBPQueueCopy(SPBPQueue* source) {
 	assert(source != NULL);
 	SPBPQueue* copy_queue = spBPQueueCreate(source-> maxSize);
 	if (copy_queue == NULL) {
@@ -29,139 +29,135 @@ SPBPQueue* spBPQueueCopy(SPBPQueue* source){
 	}
 	copy_queue->size = source->size;
 	int i;
-	for (i=0; i<source->size; ++i){
+	for (i = 0; i < source->size; ++i) {
 		copy_queue->arr[i] = source->arr[i];
 	}
-	return copy_queue; 
+	return copy_queue;
 }
 
-void spBPQueueDestroy(SPBPQueue* source){
-	if (source != NULL){
+void spBPQueueDestroy(SPBPQueue* source) {
+	if (source != NULL) {
 		free(source->arr);
 		free(source);
 	}
 
 }
 
-void spBPQueueClear(SPBPQueue* source){
+void spBPQueueClear(SPBPQueue* source) {
 	memset(source->arr, '\0', (source->maxSize) * sizeof(BPQueueElement));
 }
 
-int spBPQueueSize(SPBPQueue* source){
+int spBPQueueSize(SPBPQueue* source) {
 	assert(source != NULL);
 	return source->size;
 }
 
-int spBPQueueGetMaxSize(SPBPQueue* source){
+int spBPQueueGetMaxSize(SPBPQueue* source) {
 	assert(source != NULL);
 	return source->maxSize;
 }
 
-SP_BPQUEUE_MSG spBPQueueEnqueue(SPBPQueue* source, int index, double value){
+SP_BPQUEUE_MSG spBPQueueEnqueue(SPBPQueue* source, int index, double value) {
 	assert(source != NULL);
-	if (source->maxSize == 0){
+	if (source->maxSize == 0) {
 		return SP_BPQUEUE_FULL;
 	}
-	int i;
+	int i, b1, b2, b3, inserted = 0;
 	int temp_index = index;
 	double temp_value = value;
 	int temp_temp_index;      ///// used only for swap
 	double temp_temp_value;   ///// used only for swap
-	if (source->size == source->maxSize){
-		for (i=0; i < source->size; ++i){
-			if ((source->arr[i]).value > temp_value){
-				/// this is swap between the values of the "waiting element" and the current element in the array
-				temp_temp_index = temp_index;
-				temp_temp_value = temp_value;
-				temp_index = (source->arr[i]).index;
-				temp_value = (source->arr[i]).value;
-				(source->arr[i]).index = temp_temp_index;
-				(source->arr[i]).value = temp_temp_value;
-			}
-		}
-		return SP_BPQUEUE_FULL; //////////////////////////////////////////////////////////////////////maybe should return success
-	}
 
-	for (i=0; i < source->size; ++i){
-		if ((source->arr[i]).value > temp_value){
-				/// this is swap between the values of the "waiting element" and the current element in the array
-				temp_temp_index = temp_index;
-				temp_temp_value = temp_value;
-				temp_index = (source->arr[i]).index;
-				temp_value = (source->arr[i]).value;
-				(source->arr[i]).index = temp_temp_index;
-				(source->arr[i]).value = temp_temp_value;
+	for (i = 0; i < source->size; ++i) {
+		b1 = ((source->arr[i]).value > temp_value);
+		b2 = ((source->arr[i]).value >= temp_value);
+		b3 = ((source->arr[i]).index > temp_index);
+		if (b1 || (b2 && b3)) {
+			/// this is swap between the values of the "waiting element" and the current element in the array
+			temp_temp_index = temp_index;
+			temp_temp_value = temp_value;
+			temp_index = (source->arr[i]).index;
+			temp_value = (source->arr[i]).value;
+			(source->arr[i]).index = temp_temp_index;
+			(source->arr[i]).value = temp_temp_value;
+			inserted = 1; // if this happened at least once, the values we wated to insert was inserted
 		}
 	}
-	++(source->size);
-	(source->arr[source->size]).index = temp_index;
-	(source->arr[source->size]).value = temp_value;
-	return SP_BPQUEUE_SUCCESS;
+	if (source->size < source->maxSize) {
+		(source->arr[source->size]).index = temp_index;
+		(source->arr[source->size]).value = temp_value;
+		++(source->size);
+		inserted = 1; // if this happened, the queue wasen't full so we must have succeeded in the insertion
+	}
+	if(inserted){
+		return SP_BPQUEUE_SUCCESS;
+	}else{
+		return SP_BPQUEUE_FULL;
+	}
 }
 
-SP_BPQUEUE_MSG spBPQueueDequeue(SPBPQueue* source){
+SP_BPQUEUE_MSG spBPQueueDequeue(SPBPQueue* source) {
 	assert(source != NULL);
-	if (source->size == 0){
+	if (source->size == 0) {
 		return SP_BPQUEUE_EMPTY;
 	}
 	source->size -= 1;
-	///////////////////////////////////////////////////////////////////// free ????? memset ?????
 	return SP_BPQUEUE_SUCCESS;
 }
 
-SP_BPQUEUE_MSG spBPQueuePeek(SPBPQueue* source, BPQueueElement* res){
+SP_BPQUEUE_MSG spBPQueuePeek(SPBPQueue* source, BPQueueElement* res) {
 	assert(source != NULL && source->arr != NULL);
-	if (source->size == 0){
+	if (source->size == 0) {
 		return SP_BPQUEUE_EMPTY;
 	}
-	res = &(source->arr[(source->size) -1]);
-	if(res!=NULL){ // Does not matter, only here to make pedantic errors agree that we used res
+	*res = source->arr[0];
+	if (res != NULL) { // Does not matter, only here to make pedantic errors agree that we used res
 		return SP_BPQUEUE_SUCCESS;
-	}else{
+	} else {
 		return SP_BPQUEUE_SUCCESS;
 	}
 }
 
-SP_BPQUEUE_MSG spBPQueuePeekLast(SPBPQueue* source, BPQueueElement* res){
+SP_BPQUEUE_MSG spBPQueuePeekLast(SPBPQueue* source, BPQueueElement* res) {
 	assert(source != NULL && source->arr != NULL);
-	if (source->size == 0){
+	if (source->size == 0) {
 		return SP_BPQUEUE_EMPTY;
 	}
-	res = &(source->arr[0]);
-	if(res!=NULL){// Does not matter, only here to make pedantic errors agree that we used res
+	*res = source->arr[(source->size) - 1];
+	if (res != NULL) { // Does not matter, only here to make pedantic errors agree that we used res
 		return SP_BPQUEUE_SUCCESS;
-	}else{
+	} else {
 		return SP_BPQUEUE_SUCCESS;
 	}
 }
 
-double spBPQueueMinValue(SPBPQueue* source){
+double spBPQueueMinValue(SPBPQueue* source) {
 	assert(source != NULL && source->arr != NULL);
-	if (source->size == 0){
+	if (source->size == 0) {
 		return SP_BPQUEUE_EMPTY;
 	}
 	return (source->arr[0]).value;
 }
 
-double spBPQueueMaxValue(SPBPQueue* source){
+double spBPQueueMaxValue(SPBPQueue* source) {
 	assert(source != NULL && source->arr != NULL);
-	if (source->size == 0){
+	if (source->size == 0) {
 		return SP_BPQUEUE_EMPTY;
 	}
-	return (source->arr[(source->size)-1]).value;
+	return (source->arr[(source->size) - 1]).value;
 }
 
-bool spBPQueueIsEmpty(SPBPQueue* source){
+bool spBPQueueIsEmpty(SPBPQueue* source) {
 	assert(source != NULL);
-	if (source->size == 0){
+	if (source->size == 0) {
 		return true;
 	}
 	return false;
 }
 
-bool spBPQueueIsFull(SPBPQueue* source){
+bool spBPQueueIsFull(SPBPQueue* source) {
 	assert(source != NULL);
-	if (source->size == source->maxSize){
+	if (source->size == source->maxSize) {
 		return true;
 	}
 	return false;
