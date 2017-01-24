@@ -16,7 +16,7 @@ using namespace cv;
 
 SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 {
-	if(str==NULL || nBins<=0 || nBins>COLOR_RANGE_MAX)
+	if(str==NULL || nBins<=0)
 	{
 		return NULL;
 	}
@@ -25,7 +25,11 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 	int i, j;
 	float range[] = {COLOR_RANGE_MIN, COLOR_RANGE_MAX};
 	const float* histRange = {range};
-	SPPoint* retArr[COLOR_NUM];
+	SPPoint** retArr = (SPPoint**)malloc(COLOR_NUM*sizeof(SPPoint*));
+	if(retArr == NULL)
+	{
+		return NULL;
+	}
 	float* data ;
 
 	src = imread(str, CV_LOAD_IMAGE_COLOR);
@@ -52,20 +56,9 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 }
 double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB)
 {
-	int dims[2*COLOR_NUM] = {
-		spPointGetDimension(rgbHistA[0]),
-		spPointGetDimension(rgbHistB[0]),
-		spPointGetDimension(rgbHistA[1]),
-		spPointGetDimension(rgbHistB[1]),
-		spPointGetDimension(rgbHistA[2]),
-		spPointGetDimension(rgbHistB[2])};
-	int i;
-	for(i=1;i<2*COLOR_NUM;i++)
+	if(rgbHistA = NULL || rgbHistB == NULL)
 	{
-		if(dims[i]!=dims[0])
-		{
-			return -1;
-		}
+		return -1;
 	}
 	double distance;
 	for(i=0;i<COLOR_NUM;i++)
@@ -74,7 +67,7 @@ double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB)
 	}
 	return distance;
 }
-SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToExtract, int *nFeatures)
+SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToExtract, int* nFeatures)
 {
 	return 0;
 }
