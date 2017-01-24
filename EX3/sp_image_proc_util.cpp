@@ -9,7 +9,6 @@ extern "C"{
 }
 using namespace cv;
 
-#define SIFT_FEATURE_DIM 128
 #define COLOR_NUM 3
 #define COLOR_RANGE_MAX 256
 #define COLOR_RANGE_MIN 0
@@ -69,7 +68,50 @@ double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB)
 }
 SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToExtract, int* nFeatures)
 {
-	return 0;
+	if(str == NULL || nFeaturesToExtract<=0 || nFeatures == NULL)
+	{
+		return NULL;
+	}
+	int i, j, siftDim;
+	double* currentFeature;
+	SPPoint** features;
+	Mat src;
+	std::vector<KeyPoint> kp1;
+	Mat ds1;
+	Ptr<xfeatures2d::SiftDescriptorExtractor> detect =
+			xfeatures2d::SIFT::create(nFeaturesToExtract)
+	src = imread(str, CV_LOAD_IMAGE_GRAYSCALE);
+	if (src.empty())
+	{
+		return NULL;
+	}
+	detect->detect(src, kp1, Mat());
+	detect->compute(src, kp1, ds1);
+
+	*nFeatures = ds1.rows;
+	siftDim = ds1.cols;
+
+	features = (SPPoint**)malloc(*nFeatures * sizeof(SPPoint*));
+	if (features == NULL)
+	{
+		return NULL;
+	}
+
+	currentFeature = (double*)malloc(siftDim*sizeof(double));
+	if(currentFeature == NULL)
+	{
+		return NULL;
+	}
+	for (i = 0; i < *nFeatures; i++)
+	{
+		for (j = 0; j < siftDim; j++)
+		{
+			currentFeature[j] = ds1.at<float>(i,j);
+		}
+		features[i] = spPointCreate(currentFeature, siftDim, imageIndex);
+	}
+	free(currentFeature);
+	return features;
 }
 int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint*** databaseFeatures,
 		int numberOfImages, int* nFeaturesPerImage)
