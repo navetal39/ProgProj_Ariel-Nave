@@ -1,8 +1,8 @@
 #include <opencv2/imgproc.hpp>//calcHist
 #include <opencv2/core.hpp>//Mat
-#include <opencv2/highgui.hpp>
 #include <vector>
-#include <iostream>
+#include <cstdio>
+#include <cstdlib>
 #include "sp_image_proc_util.h"
 extern "C"{
 	#include "SPBPriorityQueue.h"
