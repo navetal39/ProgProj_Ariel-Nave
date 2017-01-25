@@ -12,6 +12,7 @@ using namespace cv;
 #define COLOR_NUM 3
 #define COLOR_RANGE_MAX 256
 #define COLOR_RANGE_MIN 0
+#define UNLOADABLE_IMAGE "Image cannot be loaded - %s\n"
 
 SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 {
@@ -34,6 +35,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 	src = imread(str, CV_LOAD_IMAGE_COLOR);
 	if(src.empty())
 	{
+		printf(UNLOADABLE_IMAGE, str);
 		return NULL;
 	}
 	std::vector<Mat> bgr_planes; // TODO help please
@@ -83,6 +85,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 	src = imread(str, CV_LOAD_IMAGE_GRAYSCALE);
 	if (src.empty())
 	{
+		printf(UNLOADABLE_IMAGE, str);
 		return NULL;
 	}
 	detect->detect(src, kp1, Mat());
