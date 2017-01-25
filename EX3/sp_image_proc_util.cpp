@@ -119,5 +119,50 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint*** databaseFeatures,
 		int numberOfImages, int* nFeaturesPerImage)
 {
-	return 0;
+	if(queryFeature == NULL || databaseFeatures == NULL || 
+		nFeaturesPerImage == NULL || numberOfImages <= 1)
+	{
+		return NULL;
+	}
+	int i, j, finalSize, currentIndex;
+	int* bestIndexes;
+	double currentDistance;
+	BPQueueElement* currElement;
+	spPoint* currentPoint;
+	SPBPQueue* queue;
+	SP_BPQUEUE_MSG msg;
+
+	queue = spBPQueueCreate(kClosest);
+	if(queue == NULL) 	// This check allows us to not have to check for "bad argument" return
+						//message with Enqueue, Dequeue and Peek.
+	{
+		return NULL;
+	}
+	for(i=0; i<numberOfImages; i++)
+	{
+		for(j=0; j<nFeaturesPerImage; j++)
+		{
+			currentPoint = queryFeature[i][j];
+			currentDistance = spPointL2SquaredDistance(currentDistance, queryFeature);
+			currentIndex = spPointGetIndex(currentPoint);
+			msg = spBPQueueEnqueue(queue, currentIndex, currentDistance);
+		}
+	}
+
+	finalSize = spBPQueueSize(queue);
+	bestIndexes = (int*)malloc(finalSize*sizeof(int));
+	for(i=0; i<finalSize; i++)
+	{
+		msg = spBPQueuePeek(queue, currElement);
+		if(msg == SP_BPQUEUE_EMPTY)	// Prevents us from having to check if msg is "empty" at dequeue.
+									// Should never happen aniway, but just in case...
+		{
+			spBPQueueDestroy(queue);
+			return NULL;
+		}
+		bestIndexes[i] = currElement->index;
+		msg = spBPQueueDequeue(queue);
+	}
+	spBPQueueDestroy(queue);
+	return bestIndexes;
 }
