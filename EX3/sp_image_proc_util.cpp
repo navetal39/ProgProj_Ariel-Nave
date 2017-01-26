@@ -16,6 +16,7 @@ using namespace cv;
 
 SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 {
+	/* check if input is valid. */
 	if(str==NULL || nBins<=0)
 	{
 		return NULL;
@@ -23,15 +24,17 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 	Mat src;
 	Mat hists[COLOR_NUM];
 	int i, j;
+	float* data ;
+	/* define range of colors. */
 	float range[] = {COLOR_RANGE_MIN, COLOR_RANGE_MAX};
 	const float* histRange = {range};
+	/* define and allocate memory for returning array */
 	SPPoint** retArr = (SPPoint**)malloc(COLOR_NUM*sizeof(SPPoint*));
 	if(retArr == NULL)
 	{
 		return NULL;
 	}
-	float* data ;
-
+	/* obtain and split image data. */
 	src = imread(str, CV_LOAD_IMAGE_COLOR);
 	if(src.empty())
 	{
@@ -40,9 +43,12 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 	}
 	std::vector<Mat> bgr_planes; // TODO help please
 	split(src, bgr_planes);
-	calcHist(&bgr_planes[0], 1, 0, Mat(), hists[0], 1, &nBins, &histRange);
-	calcHist(&bgr_planes[1], 1, 0, Mat(), hists[1], 1, &nBins, &histRange);
-	calcHist(&bgr_planes[2], 1, 0, Mat(), hists[2], 1, &nBins, &histRange);
+	/* calculate histograms for each color */
+	for(i = 0; i<COLOR_NUM; i++)
+	{
+		calcHist(&bgr_planes[i], 1, 0, Mat(), hists[i], 1, &nBins, &histRange);
+	}
+	/* convert data from matrix form to SPPoints form */
 	data = (float*)malloc(hists[0].rows * sizeof(float))
 	for(i=0; i<COLOR_NUM; i++)
 	{
@@ -53,23 +59,28 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 		retArr[i] = spPointCreate(data, hists[0].rows, imageIndex);
 	}
 	free(data);
+	/* return. */
 	return retArr;
 }
 double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB)
 {
+	/* check if input is valid. */
 	if(rgbHistA = NULL || rgbHistB == NULL)
 	{
 		return -1;
 	}
 	double distance;
+	/* calculate the distance. */
 	for(i=0;i<COLOR_NUM;i++)
 	{
 		distance += 0.33*spPointL2SquaredDistance(rgbHistA[i], rgbHistB[i]);
 	}
+	/* return. */
 	return distance;
 }
 SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToExtract, int* nFeatures)
 {
+	/* check if input is valid. */
 	if(str == NULL || nFeaturesToExtract<=0 || nFeatures == NULL)
 	{
 		return NULL;
@@ -80,26 +91,28 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 	Mat src;
 	std::vector<KeyPoint> kp1;
 	Mat ds1;
-	Ptr<xfeatures2d::SiftDescriptorExtractor> detect =
-			xfeatures2d::SIFT::create(nFeaturesToExtract)
+	/* load image. */
 	src = imread(str, CV_LOAD_IMAGE_GRAYSCALE);
 	if (src.empty())
 	{
 		printf(UNLOADABLE_IMAGE, str);
 		return NULL;
 	}
+	/* extract features. */
+	Ptr<xfeatures2d::SiftDescriptorExtractor> detect =
+			xfeatures2d::SIFT::create(nFeaturesToExtract);
 	detect->detect(src, kp1, Mat());
 	detect->compute(src, kp1, ds1);
-
+	/* update information about extracted features. */
 	*nFeatures = ds1.rows;
 	siftDim = ds1.cols;
-
+	/* allocate memory for the returning buffer. */
 	features = (SPPoint**)malloc(*nFeatures * sizeof(SPPoint*));
 	if (features == NULL)
 	{
 		return NULL;
 	}
-
+	/* convert features from matrix form to SPPoint form. */
 	currentFeature = (double*)malloc(siftDim*sizeof(double));
 	if(currentFeature == NULL)
 	{
@@ -114,11 +127,13 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 		features[i] = spPointCreate(currentFeature, siftDim, imageIndex);
 	}
 	free(currentFeature);
+	/* return. */
 	return features;
 }
 int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint*** databaseFeatures,
 		int numberOfImages, int* nFeaturesPerImage)
 {
+	/* check if input is valid. */
 	if(queryFeature == NULL || databaseFeatures == NULL || 
 		nFeaturesPerImage == NULL || numberOfImages <= 1)
 	{
@@ -132,12 +147,14 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 	SPBPQueue* queue;
 	SP_BPQUEUE_MSG msg;
 
+	/* create queue to be used later. */
 	queue = spBPQueueCreate(kClosest);
 	if(queue == NULL) 	// This check allows us to not have to check for "bad argument" return
 						//message with Enqueue, Dequeue and Peek.
 	{
 		return NULL;
 	}
+	/* enqueue image indexes according to calculated distance. */
 	for(i=0; i<numberOfImages; i++)
 	{
 		for(j=0; j<nFeaturesPerImage; j++)
@@ -149,6 +166,7 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 		}
 	}
 
+	/* extract the best images from queue into returning array and get rid of it. */
 	finalSize = spBPQueueSize(queue);
 	bestIndexes = (int*)malloc(finalSize*sizeof(int));
 	for(i=0; i<finalSize; i++)
@@ -164,5 +182,6 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 		msg = spBPQueueDequeue(queue);
 	}
 	spBPQueueDestroy(queue);
+	/* return. */
 	return bestIndexes;
 }
