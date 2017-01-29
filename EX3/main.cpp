@@ -4,7 +4,10 @@
 
 #include "sp_image_proc_util.h"
 #include "main_aux.h"
-
+extern "C"{
+	#include "SPBPriorityQueue.h"
+	#include "SPPoint.h"
+}
 
 
 #define ENTER_PATH_TO_DIR "Enter images directory path:\n"
@@ -31,7 +34,23 @@
 #define NUM_IMAGES_RETURN 5
 #define INPUT_MIN_VALUE 1
 
-int main{
+#define FREE_MAIN_DATA do{\
+						free3DArray((void***)img_rgb_hist, num_images, 3); \
+						for(j = 0; j < num_images; j++) \
+							free2DArray((void**)img_sift_descriptors[j], img_num_features[j]); \
+						free(img_sift_descriptors); \
+						free(img_num_features); \
+						free(img_sift_hits);\
+						}while(0);
+// Macro used to free the variables under the label "Query data"
+#define FREE_QUERY_DATA do{\
+						free2DArray((void**)query_rgb_hist, 3); \
+						free2DArray((void**)query_sift_descriptors, query_num_features);\
+						}while(0);
+
+
+int main()
+{
 
 	char path_dir[MAX_LINE_LEN];
 	char img_prefix[MAX_LINE_LEN];
@@ -42,18 +61,20 @@ int main{
 	int num_images = -1;
 	int nBins = -1;
 	int num_features = -1;
-	int loops_tmp;
+	int i, j;
+	int query_index = 0;
+
 
 	// Main data
-	int*** img_rgb_hist;
-	double*** img_sift_descriptors;
+	SPPoint*** img_rgb_hist;
+	SPPoint*** img_sift_descriptors;
 	int* img_num_features;
 	sift_hits* img_sift_hits;
 
 	// Query data
-	int** query_rgb_hist;
+	SPPoint** query_rgb_hist;
 	int query_num_features = -1;
-	double** queryImgSiftDescriptors;
+	SPPoint** query_sift_descriptors;
 
 	// Loop data
 	int* best_sift_of_feature;
@@ -65,7 +86,7 @@ int main{
 
 
 	printf(ENTER_PATH_TO_DIR );
-	readline(path_dir);
+	readLine(path_dir);
 
 	printf(ENTER_IMAGES_PREFIX);
 	readLine(img_prefix);
@@ -95,8 +116,8 @@ int main{
 
 	// allocating
 	best_queue = spBPQueueCreate(NUM_IMAGES_RETURN + 1);
-	img_rgb_hist = (int***) malloc(num_images * sizeof(int**));
-	img_sift_descriptors = (double***) malloc(num_images * sizeof(double**));
+	img_rgb_hist = (SPPoint***)malloc(num_images * sizeof(SPPoint**));
+	img_sift_descriptors = (SPPoint***)malloc(num_images * sizeof(SPPoint**));
 	img_num_features = (int*) malloc(num_images * sizeof(int));
 	img_sift_hits = (sift_hits*) malloc(num_images * sizeof(sift_hits));
 
@@ -105,14 +126,14 @@ int main{
 	{
 		// free all allocation that succeeded
 		printf(ERROR_ALLOCATION);
-		if (best_queue != NULL) {
-			spBPQueueDestroy(best_queue);
-		}
-		if (img_rgb_hist != NULL) {
+		if(img_rgb_hist != NULL){
 			free(img_rgb_hist);
 		}
-		if (img_sift_descriptors != NULL) {
+		if(img_sift_descriptors != NULL){
 			free(img_sift_descriptors);
+		}
+		if (best_queue != NULL) {
+			spBPQueueDestroy(best_queue);
 		}
 		if (img_num_features != NULL) {
 			free(img_num_features);
@@ -123,9 +144,9 @@ int main{
 		return -1;
 	}
 
-	for (int i = 0; i < num_images; i++)
+	for (i = 0; i < num_images; i++)
 	{
-		sprintf(tmp_image_path, "%s%s%d.%s", dirPath, img_prefix, i, img_suffix);
+		sprintf(tmp_image_path, "%s%s%d.%s", path_dir, img_prefix, i, img_suffix);
 		img_rgb_hist[i] = spGetRGBHist(tmp_image_path, i, nBins);
 		if (img_rgb_hist[i] == NULL)
 		{
@@ -139,15 +160,15 @@ int main{
 	}
 
 	// Preprocessing the local features database
-	for (int i = 0; i < num_images; i++)
+	for (i = 0; i < num_images; i++)
 	{
-		sprintf(tmp_image_path, "%s%s%d.%s", dirPath, img_prefix, i, img_suffix);
+		sprintf(tmp_image_path, "%s%s%d.%s", path_dir, img_prefix, i, img_suffix);
 		img_sift_descriptors[i] = spGetSiftDescriptors(tmp_image_path, i, num_features, img_num_features + i);
 		if (img_sift_descriptors[i] == NULL)
 		{
 			printf(ERROR_ALLOCATION);
 			free3DArray((void***)img_rgb_hist, num_images, 3);
-			for (int j = 0; j < i; j++)
+			for (j = 0; j < i; j++)
 				free2DArray((void**)img_sift_descriptors[j], img_num_features[j]);
 			free(img_sift_descriptors);
 			free(img_num_features);
@@ -155,8 +176,6 @@ int main{
 			return -1;
 		}
 	}
-
-	int query_index;
 	// Looping until # is entered
 
 	while (1)
@@ -169,8 +188,8 @@ int main{
 		}
 		// remember to check if Nave returned NULL in alloc fail...
 		query_rgb_hist = spGetRGBHist(tmp_input,query_index, nBins);
-		queryImgSiftDescriptors = spGetSiftDescriptors(tmp_input, query_index, num_features, &query_num_features);
-		if (query_rgb_hist == NULL || queryImgSiftDescriptors == NULL)
+		query_sift_descriptors = spGetSiftDescriptors(tmp_input, query_index, num_features, &query_num_features);
+		if (query_rgb_hist == NULL || query_sift_descriptors == NULL)
 		{
 			printf(ERROR_ALLOCATION);
 			FREE_MAIN_DATA;
@@ -180,7 +199,7 @@ int main{
 
 		// This part finds the best images using global features
 
-		for (int i = 0; i < num_images; i++)
+		for (i = 0; i < num_images; i++)
 		{
 			if (SP_BPQUEUE_SUCCESS == spBPQueueEnqueue(best_queue, i, spRGBHistL2Distance(query_rgb_hist, img_rgb_hist[i]))) {
 				printf(ERROR_ALLOCATION);
@@ -190,21 +209,24 @@ int main{
 			}
 			if (spBPQueueIsFull(best_queue)) {
 				if (SP_BPQUEUE_SUCCESS == spBPQueueDequeue(best_queue)) {
-				printf(ERROR_ALLOCATION);
-				FREE_MAIN_DATA;
-				FREE_QUERY_DATA;
-				return -1;
+					printf(ERROR_ALLOCATION);
+					FREE_MAIN_DATA;
+					FREE_QUERY_DATA;
+					return -1;
+				}
 			}
 		}
 
 		// print results for global features
 		printf(PRINT_GLOBAL);
 
+		tmp_queue_element = (BPQueueElement*) malloc(sizeof(BPQueueElement));
 		if (!(spBPQueueIsEmpty(best_queue))){
 			if (SP_BPQUEUE_SUCCESS == spBPQueuePeek(best_queue, tmp_queue_element)) {
 				printf(ERROR_ALLOCATION);
 				FREE_MAIN_DATA;
 				FREE_QUERY_DATA;
+				free(tmp_queue_element);
 				return -1;
 			}
 			printf("%d", tmp_queue_element->index );
@@ -214,22 +236,25 @@ int main{
 				printf(ERROR_ALLOCATION);
 				FREE_MAIN_DATA;
 				FREE_QUERY_DATA;
+				free(tmp_queue_element);
 				return -1;
 			}
-			if (SP_BPQUEUE_SUCCESS == spBPQueuePeek(best_queue, tmp_queue_element)) != 0) {
+			if (SP_BPQUEUE_SUCCESS == spBPQueuePeek(best_queue, tmp_queue_element)) {
 				printf(ERROR_ALLOCATION);
 				FREE_MAIN_DATA;
 				FREE_QUERY_DATA;
+				free(tmp_queue_element);
 				return -1;
 			}
 			printf(", %d", tmp_queue_element->index );
 		}
+		free(tmp_queue_element);
 		printf("\n");
 
-		 This part finds the best images using local features
+		// This part finds the best images using local features
 
 		// Initializing the image hits array
-		for (int i = 0; i < num_images; i++)
+		for (i = 0; i < num_images; i++)
 		{
 			img_sift_hits[i].hits = 0;
 			img_sift_hits[i].index = i;
@@ -237,16 +262,16 @@ int main{
 
 		// For each feature we find to NUM_IMAGES_RETURN best local features,
 		// we count hits for every image
-		for (int i = 0; i < num_features; i++)
+		for (i = 0; i < num_features; i++)
 		{
-			best_sift_of_feature = spBestSIFTL2SquaredDistance(NUM_IMAGES_RETURN, queryImgSiftDescriptors[i], img_sift_descriptors, num_images, img_num_features);
+			best_sift_of_feature = spBestSIFTL2SquaredDistance(NUM_IMAGES_RETURN, query_sift_descriptors[i], img_sift_descriptors, num_images, img_num_features);
 			if (best_sift_of_feature == NULL)
 			{
 				FREE_MAIN_DATA;
 				FREE_QUERY_DATA;
 				return -1;
 			}
-			for (int j = 0; j < NUM_IMAGES_RETURN; j++)
+			for (j = 0; j < NUM_IMAGES_RETURN; j++)
 			{
 				img_sift_hits[best_sift_of_feature[j]].hits++;
 			}
@@ -260,7 +285,7 @@ int main{
 		printf(PRINT_LOCAL);
 		if(NUM_IMAGES_RETURN > 0)
 			printf("%d", img_sift_hits[0].index);
-		for(int i = 1; i < NUM_IMAGES_RETURN; i++)
+		for(i = 1; i < NUM_IMAGES_RETURN; i++)
 			printf(", %d", img_sift_hits[i].index);
 		printf("\n");
 
@@ -271,6 +296,4 @@ int main{
 
 	printf(PRINT_EXIT);
 	FREE_MAIN_DATA;
-}
-
 }

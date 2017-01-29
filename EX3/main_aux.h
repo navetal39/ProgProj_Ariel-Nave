@@ -4,11 +4,11 @@
 
 #define MAX_LINE_LEN 1024
 
-struct ImageSiftHits
+typedef struct ImageSiftHits
 {
 	int index;
 	int hits;
-};
+}sift_hits;
 
 /*
 	if 'a' < 'b' : return value is positive
