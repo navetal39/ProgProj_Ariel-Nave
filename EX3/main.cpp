@@ -5,8 +5,8 @@
 #include "sp_image_proc_util.h"
 #include "main_aux.h"
 extern "C" {
-#include "SPBPriorityQueue.h"
-#include "SPPoint.h"
+	#include "SPBPriorityQueue.h"
+	#include "SPPoint.h"
 }
 
 int main()
@@ -20,7 +20,6 @@ int main()
 	int num_images = -1;
 	int nBins = -1;
 	int num_features = -1;
-	int i, j;
 	int query_index = -1;
 
 
@@ -105,15 +104,15 @@ int main()
 	img_rgb_hist = GetRGBHistograms(img_rgb_hist, path_dir, img_prefix, img_suffix, num_images, nBins);
 	if (NULL == img_rgb_hist)
 	{
-		/////////////////////////////handle
+		// TODO: handle
 		return -1;
 	}
 
 	// local features preproccessing
 	img_sift_descriptors = getSiftDescriptors(img_sift_descriptors, path_dir, img_prefix, img_suffix, num_images, num_features, img_num_features);
-	if (NULL == siftDescriptorsArray)
+	if (NULL == img_sift_descriptors)
 	{
-		//////////////////////////////check if handled well
+		// TODO: check if handled well
 		free(img_num_features);
 		free(img_rgb_hist);
 		return -1;
@@ -134,36 +133,35 @@ int main()
 		if (query_rgb_hist == NULL || query_sift_descriptors == NULL)
 		{
 			printf(ERROR_ALLOCATION);
-			FREE_MAIN_DATA;
-			FREE_QUERY_DATA;
+			// TODO: // TODO: handle;
 			return -1;
 		}
 
 		// This part finds the best images using global features
 		best_queue = PutBestGlobalInQueue(query_rgb_hist, img_rgb_hist, num_images);
 		if (best_queue == NULL) {
-			//////////////////////////////////////handle
+			// TODO: handle
 		}
 
 		// print results for global features
 		if ((PrintBestGlobalFromQueue(best_queue)) != 0) {
-			//////////////////////////////////////handle
+			// TODO: handle
 			return -1;
 		}
 
 		// For each feature we find to NUM_IMAGES_RETURN best local features,
 		// we count hits for every image
-		img_sift_hits = PutBestLocalInArray(img_sift_hits, img_sift_descriptors, query_sift_descriptors, num_images, img_num_features, query_num_features)
+		img_sift_hits = PutBestLocalInArray(img_sift_hits, img_sift_descriptors, query_sift_descriptors, num_images, img_num_features, query_num_features);
 		if (img_sift_hits == NULL) {
-			//////////////////////////////////////handle
+			// TODO: handle
 		}
 
 		if ((PrintBestLocalFromArray(img_sift_hits)) != 0) {
-			//////////////////////////////////////handle
+			// TODO: handle
 			return -1;
 		}
-		HistogramsAndSiftsDestroy(query_rgb_hist, 3);
-		destroySiftDescreptor(query_sift_descriptors, query_num_features);
+		HistogramsOrSiftsDestroy(query_rgb_hist, 3);
+		HistogramsOrSiftsDestroy(query_sift_descriptors, query_num_features);
 	}
 	printf(PRINT_EXIT);
 	DestroyAllHistogramsAndSifts(img_rgb_hist, img_sift_descriptors, num_images, img_num_features);

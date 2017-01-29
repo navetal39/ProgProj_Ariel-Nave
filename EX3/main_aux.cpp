@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
+#include <assert.h>
 #include "main_aux.h"
+#include "sp_image_proc_util.h"
 
 /*
    Recursively frees all allocated memory in a 3d array
@@ -21,15 +23,13 @@ SPPoint*** GetRGBHistograms(SPPoint*** result_hist, char* path_dir, char* img_pr
 			for (j = 0; j < i; j++)
 			{
 				// need to free all histograms that were already allocated
-				RGBHistogramDestroy(result_hist[j], 3);
+				HistogramsOrSiftsDestroy(result_hist[j], 3);
 			}
 			free(result_hist);
 			return NULL;
 		}
 	}
 	return result_hist;
-}
-
 }
 
 SPPoint*** getSiftDescriptors(SPPoint*** result_hist, char* path_dir, char* img_prefix, char* img_suffix, int num_images, int num_features, int* img_num_features) {
@@ -41,7 +41,7 @@ SPPoint*** getSiftDescriptors(SPPoint*** result_hist, char* path_dir, char* img_
 	{
 		sprintf(tmp_image_path, "%s%s%d%s", path_dir, img_prefix, i, img_suffix);
 		result_hist[i] = spGetSiftDescriptors(tmp_image_path, i, num_features, img_num_features + i);
-		if (img_sift_descriptors[i] == NULL)
+		if (result_hist[i] == NULL)
 		{
 			printf(ERROR_ALLOCATION);
 			if (NULL == result_hist[i])
@@ -49,15 +49,14 @@ SPPoint*** getSiftDescriptors(SPPoint*** result_hist, char* path_dir, char* img_
 				printf(ERROR_ALLOCATION);
 				for (j = 0; j < i; j++)
 				{
-					HistogOrsAndSiftsDestroy(result_hist[j], img_num_features[i]);
+					HistogramsOrSiftsDestroy(result_hist[j], img_num_features[i]);
 				}
 				free(result_hist);
 				return NULL;
 			}
 		}
-		return result_hist;
 	}
-}
+	return result_hist;
 }
 
 void HistogramsOrSiftsDestroy(SPPoint** hist_or_sift, int num_histograms)
@@ -76,8 +75,8 @@ void HistogramsOrSiftsDestroy(SPPoint** hist_or_sift, int num_histograms)
 
 int sift_comparator(const void * a, const void * b)
 {
-	ImageSiftHits *elem1 = (ImageSiftHits *)a;
-	ImageSiftHits *elem2 = (ImageSiftHits *)b;
+	sift_hits *elem1 = (sift_hits *)a;
+	sift_hits *elem2 = (sift_hits *)b;
 
 	if (elem1->hits == elem2->hits)
 		return elem1->index - elem2->index;
@@ -132,8 +131,7 @@ int PrintBestGlobalFromQueue(SPBPQueue* best_queue) {
 	if (!(spBPQueueIsEmpty(best_queue))) {
 		if (SP_BPQUEUE_SUCCESS == spBPQueuePeek(best_queue, tmp_queue_element)) {
 			printf(ERROR_ALLOCATION);
-			FREE_MAIN_DATA;
-			FREE_QUERY_DATA;
+			// TODO: handle
 			free(tmp_queue_element);
 			return -1;
 		}
@@ -143,15 +141,13 @@ int PrintBestGlobalFromQueue(SPBPQueue* best_queue) {
 	while (!(spBPQueueIsEmpty(best_queue))) {
 		if (SP_BPQUEUE_SUCCESS == spBPQueueDequeue(best_queue)) {
 			printf(ERROR_ALLOCATION);
-			FREE_MAIN_DATA;
-			FREE_QUERY_DATA;
+			// TODO: handle
 			free(tmp_queue_element);
 			return -1;
 		}
 		if (SP_BPQUEUE_SUCCESS == spBPQueuePeek(best_queue, tmp_queue_element)) {
 			printf(ERROR_ALLOCATION);
-			FREE_MAIN_DATA;
-			FREE_QUERY_DATA;
+			// TODO: handle
 			free(tmp_queue_element);
 			return -1;
 		}
@@ -163,10 +159,13 @@ int PrintBestGlobalFromQueue(SPBPQueue* best_queue) {
 
 }
 
-int* PutBestLocalInArray(sift_hits* img_sift_hits, SPPoint*** img_sift_descriptors, SPPoint** query_sift_descriptors, int num_images, int* img_num_features, int query_num_features ) {
+sift_hits* PutBestLocalInArray(sift_hits* img_sift_hits, SPPoint*** img_sift_descriptors,
+								 SPPoint** query_sift_descriptors, int num_images,
+								 int* img_num_features, int query_num_features)
+{
 
 	int i, j;
-	int best_sift_of_feature[NUM_IMAGES_RETURN];
+	int* best_sift_of_feature;
 
 	// initializing the array
 	for (i = 0; i < num_images; i++)
@@ -175,7 +174,7 @@ int* PutBestLocalInArray(sift_hits* img_sift_hits, SPPoint*** img_sift_descripto
 		img_sift_hits[i].index = i;
 	}
 
-	for (i = 0; i < num_features; i++)
+	for (i = 0; i < query_num_features; i++)
 	{
 		best_sift_of_feature = spBestSIFTL2SquaredDistance(NUM_IMAGES_RETURN, query_sift_descriptors[i], img_sift_descriptors, num_images, img_num_features);
 		if (best_sift_of_feature == NULL)
@@ -187,6 +186,7 @@ int* PutBestLocalInArray(sift_hits* img_sift_hits, SPPoint*** img_sift_descripto
 			img_sift_hits[best_sift_of_feature[j]].hits++;
 		}
 	}
+	free(best_sift_of_feature);
 
 	// sorting the images by their number of hits
 	qsort(img_sift_hits, num_images, sizeof(sift_hits), sift_comparator);
@@ -211,7 +211,7 @@ int PrintBestLocalFromArray(sift_hits* img_sift_hits) {
 	return 0;
 }
 
-DestroyAllHistogramsAndSifts(SPPoint*** img_rgb_hist, SPPoint*** img_sift_descriptors,  int num_images, int* img_num_features) {
+void DestroyAllHistogramsAndSifts(SPPoint*** img_rgb_hist, SPPoint*** img_sift_descriptors,  int num_images, int* img_num_features) {
 
 	int i;
 
@@ -224,7 +224,7 @@ DestroyAllHistogramsAndSifts(SPPoint*** img_rgb_hist, SPPoint*** img_sift_descri
 
 	for (i = 0; i < num_images; ++i)
 	{
-		destroySiftDescreptor(img_sift_descriptors[i], img_num_features[i]);
+		HistogramsOrSiftsDestroy(img_sift_descriptors[i], img_num_features[i]);
 	}
 	free(img_rgb_hist);
 	free(img_sift_descriptors);

@@ -2,6 +2,12 @@
 #define MAIN_AUX_H
 
 
+extern "C" {
+	#include "SPBPriorityQueue.h"
+	#include "SPPoint.h"
+}
+
+
 #define ENTER_PATH_TO_DIR "Enter images directory path:\n"
 #define ENTER_IMAGES_PREFIX "Enter images prefix:\n"
 #define ENTER_IMAGE_SUFFIX "Enter images suffix:\n"
@@ -25,20 +31,6 @@
 #define MAX_LINE_LEN 1024
 #define NUM_IMAGES_RETURN 5
 #define INPUT_MIN_VALUE 1
-
-#define FREE_MAIN_DATA do{\
-						free3DArray((void***)img_rgb_hist, num_images, 3); \
-						for(j = 0; j < num_images; j++) \
-							free2DArray((void**)img_sift_descriptors[j], img_num_features[j]); \
-						free(img_sift_descriptors); \
-						free(img_num_features); \
-						free(img_sift_hits);\
-						}while(0);
-// Macro used to free the variables under the label "Query data"
-#define FREE_QUERY_DATA do{\
-						free2DArray((void**)query_rgb_hist, 3); \
-						free2DArray((void**)query_sift_descriptors, query_num_features);\
-						}while(0);
 
 
 
@@ -64,13 +56,13 @@ SPBPQueue* PutBestGlobalInQueue(SPPoint** query_rgb_hist, SPPoint*** img_rgb_his
 int PrintBestGlobalFromQueue(SPBPQueue* best_queue);
 
 
-int* PutBestLocalInArray(sift_hits* img_sift_hits, SPPoint*** img_sift_descriptors, SPPoint** query_sift_descriptors, int num_images, int* img_num_features, int query_num_features);
+sift_hits* PutBestLocalInArray(sift_hits* img_sift_hits, SPPoint*** img_sift_descriptors, SPPoint** query_sift_descriptors, int num_images, int* img_num_features, int query_num_features);
 
 
 int PrintBestLocalFromArray(sift_hits* img_sift_hits);
 
 
-DestroyAllHistogramsAndSifts(SPPoint*** img_rgb_hist, SPPoint*** img_sift_descriptors,  int num_images, int* img_num_features);
+void DestroyAllHistogramsAndSifts(SPPoint*** img_rgb_hist, SPPoint*** img_sift_descriptors,  int num_images, int* img_num_features);
 
 /*
 	if 'a' < 'b' : return value is positive
