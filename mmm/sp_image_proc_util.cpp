@@ -129,7 +129,6 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 			for (j = 0; j < i; ++j) {
 				spPointDestroy(retFeatures[j]);
 			}
-			printf("POINTFAIL\n");
 			free(retFeatures);
 			return NULL;
 		}
@@ -158,82 +157,82 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 	SP_BPQUEUE_MSG msg;
 
 	/* create queue to be used later. */
-	printf("aaa\n");
+	// printf("aaa\n");
 	queue = spBPQueueCreate(kClosest);
-	printf("bbb\n");
+	// printf("bbb\n");
 	if(queue == NULL) 	// This check allows us to not have to check for "bad argument" return
 						//message with Enqueue, Dequeue and Peek.
 	{
-		printf("errorerrorerror\n");
+		// printf("errorerrorerror\n");
 		return NULL;
 	}
 	/* enqueue image indexes according to calculated distance. */
 	for(i=0; i<numberOfImages; i++)
 	{
-		printf("ccc\n");
+		// printf("ccc\n");
 		for(j=0; j<nFeaturesPerImage[i]; j++)
 		{
-			printf("ddd\n");
+			// printf("ddd\n");
 			currentPoint = databaseFeatures[i][j];
-			printf("eee\n");
-			printf("%s %s\n", (currentPoint==NULL)?"YES":"NO", (queryFeature==NULL)?"YES":"NO");
+			// printf("eee\n");
+			// printf("%s %s\n", (currentPoint==NULL)?"YES":"NO", (queryFeature==NULL)?"YES":"NO");
 			currentDistance = spPointL2SquaredDistance(currentPoint, queryFeature);
-			printf("fff\n");
+			// printf("fff\n");
 			currentIndex = spPointGetIndex(currentPoint);
-			printf("ggg\n");
+			// printf("ggg\n");
 			msg = spBPQueueEnqueue(queue, currentIndex, currentDistance);
-			printf("hhh\n");
+			// printf("hhh\n");
 		}
-		printf("iii\n");
+		// printf("iii\n");
 	}
-	printf("jjj\n");
+	// printf("jjj\n");
 	free(currentPoint);
-	printf("kkk\n");
+	// printf("kkk\n");
 	/* extract the best images from queue into returning array and get rid of it. */
 	finalSize = spBPQueueSize(queue);
-	printf("lll\n");
+	// printf("lll\n");
 	bestIndexes = (int*)malloc(finalSize*sizeof(int));
-	printf("mmm\n");
+	// printf("mmm\n");
 	if(bestIndexes != NULL)
 	{
-		printf("nnn\n");
+		// printf("nnn\n");
 		currElement = (BPQueueElement*) malloc(sizeof(BPQueueElement));
-		printf("ooo\n");
+		// printf("ooo\n");
 		if(currElement != NULL)
 		{
-			printf("ppp\n");
+			// printf("ppp\n");
 			for(i=0; i<finalSize; i++)
 			{
-				printf("qqq\n");
+				// printf("qqq\n");
 				msg = spBPQueuePeek(queue, currElement);
-				printf("rrr\n");
+				// printf("rrr\n");
 				if(msg == SP_BPQUEUE_EMPTY)	// Prevents us from having to check if msg is "empty" at dequeue.
 											// Should never happen aniway, but just in case...
 				{
-					printf("moreerrorwtf\n");
+					// printf("moreerrorwtf\n");
 					spBPQueueDestroy(queue);
 					return NULL;
 				}
-				printf("sss\n");
+				// printf("sss\n");
 				bestIndexes[i] = currElement->index;
-				printf("ttt\n");
+				// printf("ttt\n");
 				msg = spBPQueueDequeue(queue);
-				printf("uuu\n");
+				// printf("uuu\n");
 			}
-			printf("vvv\n");
+			// printf("vvv\n");
 			free(currElement);
-			printf("www\n");
+			// printf("www\n");
 		}else{
-			printf("asdfjklhasdfklasdkljf\n");
+			// printf("asdfjklhasdfklasdkljf\n");
 			printf(ALLOC_ERROR);
 		}
 	}else{
-		printf("asdfehjuuikiljhklkjlhjkvvvvv\n");
+		// printf("asdfehjuuikiljhklkjlhjkvvvvv\n");
 		printf(ALLOC_ERROR);
 	}
-	printf("xxx\n");
+	// printf("xxx\n");
 	spBPQueueDestroy(queue);
-	printf("yyy\n");
+	// printf("yyy\n");
 	/* return. */
 	return bestIndexes;
 }

@@ -1,8 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stddef.h>
-#include <string.h>
-#include <assert.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
 #include "main_aux.h"
 #include "sp_image_proc_util.h"
 
@@ -44,16 +43,12 @@ SPPoint*** getSiftDescriptors(SPPoint*** result_hist, char* path_dir, char* img_
 		if (result_hist[i] == NULL)
 		{
 			printf(ERROR_ALLOCATION);
-			if (NULL == result_hist[i])
+			for (j = 0; j < i; j++)
 			{
-				printf(ERROR_ALLOCATION);
-				for (j = 0; j < i; j++)
-				{
-					HistogramsOrSiftsDestroy(result_hist[j], img_num_features[i]);
-				}
-				free(result_hist);
-				return NULL;
+				HistogramsOrSiftsDestroy(result_hist[j], img_num_features[i]);
 			}
+			free(result_hist);
+			return NULL;
 		}
 	}
 	return result_hist;
@@ -90,22 +85,21 @@ int sift_comparator(const void * a, const void * b)
 }
 /// check
 SPBPQueue* PutBestGlobalInQueue(SPPoint** query_rgb_hist, SPPoint*** img_rgb_hist, int num_images) {
-
 	int i;
+	double dist;
 	SP_BPQUEUE_MSG massage;
 	SPBPQueue* best_queue;
-
-	best_queue = spBPQueueCreate(NUM_IMAGES_RETURN + 1);
+	best_queue = spBPQueueCreate(NUM_IMAGES_RETURN);
 	// if allocating the queue failed
 	if (NULL == best_queue)
 	{
 		printf(ERROR_ALLOCATION);
 		return NULL;
 	}
-
 	for (i = 0; i < num_images; i++)
 	{
-		massage = spBPQueueEnqueue(best_queue, i, spRGBHistL2Distance(query_rgb_hist, img_rgb_hist[i]));
+		dist = spRGBHistL2Distance(query_rgb_hist, img_rgb_hist[i]);
+		massage = spBPQueueEnqueue(best_queue, i, dist);
 		if (!((SP_BPQUEUE_SUCCESS == massage) || (SP_BPQUEUE_FULL == massage))) {
 			printf(ERROR_ALLOCATION);
 			return NULL;
@@ -114,14 +108,12 @@ SPBPQueue* PutBestGlobalInQueue(SPPoint** query_rgb_hist, SPPoint*** img_rgb_his
 	return best_queue;
 }
 int PrintBestGlobalFromQueue(SPBPQueue* best_queue) {
-
 	BPQueueElement* tmp_queue_element;
-
-
 
 	tmp_queue_element = (BPQueueElement*) malloc(sizeof(BPQueueElement));
 	// if allocation fails
 	if (tmp_queue_element == NULL) {
+		printf(ERROR_ALLOCATION);
 		return -1;
 	}
 
@@ -129,8 +121,14 @@ int PrintBestGlobalFromQueue(SPBPQueue* best_queue) {
 
 	//prints the first index
 	if (!(spBPQueueIsEmpty(best_queue))) {
-		if (SP_BPQUEUE_SUCCESS == spBPQueuePeek(best_queue, tmp_queue_element)) {
-			printf(ERROR_ALLOCATION);
+		if (SP_BPQUEUE_SUCCESS != spBPQueuePeek(best_queue, tmp_queue_element)) {
+			printf(ERROR_QUEUE);
+			// TODO: handle
+			free(tmp_queue_element);
+			return -1;
+		}
+		if (SP_BPQUEUE_SUCCESS != spBPQueueDequeue(best_queue)) {
+			printf(ERROR_QUEUE);
 			// TODO: handle
 			free(tmp_queue_element);
 			return -1;
@@ -139,14 +137,14 @@ int PrintBestGlobalFromQueue(SPBPQueue* best_queue) {
 	}
 	//prints the next indices
 	while (!(spBPQueueIsEmpty(best_queue))) {
-		if (SP_BPQUEUE_SUCCESS == spBPQueueDequeue(best_queue)) {
-			printf(ERROR_ALLOCATION);
+		if (SP_BPQUEUE_SUCCESS != spBPQueuePeek(best_queue, tmp_queue_element)) {
+			printf(ERROR_QUEUE);
 			// TODO: handle
 			free(tmp_queue_element);
 			return -1;
 		}
-		if (SP_BPQUEUE_SUCCESS == spBPQueuePeek(best_queue, tmp_queue_element)) {
-			printf(ERROR_ALLOCATION);
+		if (SP_BPQUEUE_SUCCESS != spBPQueueDequeue(best_queue)) {
+			printf(ERROR_QUEUE);
 			// TODO: handle
 			free(tmp_queue_element);
 			return -1;
@@ -170,26 +168,35 @@ sift_hits* PutBestLocalInArray(sift_hits* img_sift_hits, SPPoint*** img_sift_des
 	// initializing the array
 	for (i = 0; i < num_images; i++)
 	{
+		printf("1\n");
 		img_sift_hits[i].hits = 0;
 		img_sift_hits[i].index = i;
 	}
 
 	for (i = 0; i < query_num_features; i++)
 	{
+		printf("2\n");
 		best_sift_of_feature = spBestSIFTL2SquaredDistance(NUM_IMAGES_RETURN, query_sift_descriptors[i], img_sift_descriptors, num_images, img_num_features);
+		printf("3\n");
 		if (best_sift_of_feature == NULL)
 		{
+			printf("error\n");
 			return NULL;
 		}
+		printf("4\n");
 		for (j = 0; j < NUM_IMAGES_RETURN; j++)
 		{
+			printf("5\n");
 			img_sift_hits[best_sift_of_feature[j]].hits++;
 		}
+		printf("6\n");
 	}
+	printf("7\n");
 	free(best_sift_of_feature);
-
+	printf("8\n");
 	// sorting the images by their number of hits
 	qsort(img_sift_hits, num_images, sizeof(sift_hits), sift_comparator);
+	printf("1\n");
 	return img_sift_hits;
 
 }

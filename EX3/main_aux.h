@@ -32,7 +32,29 @@ extern "C" {
 #define NUM_IMAGES_RETURN 5
 #define INPUT_MIN_VALUE 1
 
-
+#define ALLOCATE_BUFFERS\
+	do{\
+		img_rgb_hist = (SPPoint***)malloc(num_images * sizeof(SPPoint**));\
+		img_sift_descriptors = (SPPoint***)malloc(num_images * sizeof(SPPoint**));\
+		img_num_features = (int*) malloc(num_images * sizeof(int));\
+		img_sift_hits = (sift_hits*) malloc(num_images * sizeof(sift_hits));\
+		if (img_rgb_hist == NULL || img_sift_descriptors == NULL || img_num_features == NULL || img_sift_hits == NULL){\
+			printf(ERROR_ALLOCATION);\
+			if (img_rgb_hist != NULL) {\
+				free(img_rgb_hist);\
+			}\
+			if (img_sift_descriptors != NULL) {\
+				free(img_sift_descriptors);\
+			}\
+			if (img_num_features != NULL) {\
+				free(img_num_features);\
+			}\
+			if (img_sift_hits != NULL) {\
+				free(img_sift_hits);\
+			}\
+			return -1;\
+		}\
+	}while(0);
 
 typedef struct image_sift_hits_counter
 {
