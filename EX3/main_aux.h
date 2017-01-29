@@ -2,13 +2,75 @@
 #define MAIN_AUX_H
 
 
-#define MAX_LINE_LEN 1024
+#define ENTER_PATH_TO_DIR "Enter images directory path:\n"
+#define ENTER_IMAGES_PREFIX "Enter images prefix:\n"
+#define ENTER_IMAGE_SUFFIX "Enter images suffix:\n"
+#define ENTER_NUM_BINS "Enter number of bins:\n"
+#define ENTER_NUM_IMAGES "Enter number of images:\n"
+#define ENTER_NUM_FEATURES "Enter number of features:\n"
+#define ENTER_QUERY_OR_TERMINATE "Enter a query image or # to terminate:\n"
 
-typedef struct ImageSiftHits
+#define ERROR_NUM_BINS "An error occurred - invalid number of bins\n"
+#define ERROR_NUM_IMAGES "An error occurred - invalid number of images\n"
+#define ERROR_NUM_FEATURES "An error occurred - invalid number of features\n"
+#define ERROR_ALLOCATION "An error occurred - allocation failure\n"
+
+#define ERROR_QUEUE "An error occurred - queue function failed"
+
+#define PRINT_GLOBAL "Nearest images using global descriptors:\n"
+#define PRINT_LOCAL "Nearest images using local descriptors:\n"
+#define PRINT_EXIT "Exiting...\n"
+
+#define MAX_IMAGE_PATH_LEN 1024
+#define MAX_LINE_LEN 1024
+#define NUM_IMAGES_RETURN 5
+#define INPUT_MIN_VALUE 1
+
+#define FREE_MAIN_DATA do{\
+						free3DArray((void***)img_rgb_hist, num_images, 3); \
+						for(j = 0; j < num_images; j++) \
+							free2DArray((void**)img_sift_descriptors[j], img_num_features[j]); \
+						free(img_sift_descriptors); \
+						free(img_num_features); \
+						free(img_sift_hits);\
+						}while(0);
+// Macro used to free the variables under the label "Query data"
+#define FREE_QUERY_DATA do{\
+						free2DArray((void**)query_rgb_hist, 3); \
+						free2DArray((void**)query_sift_descriptors, query_num_features);\
+						}while(0);
+
+
+
+typedef struct image_sift_hits_counter
 {
 	int index;
 	int hits;
 }sift_hits;
+
+
+SPPoint*** GetRGBHistograms(SPPoint*** result_hist, char* path_dir, char* img_prefix, char* img_suffix, int num_images, int nBins);
+
+
+SPPoint*** getSiftDescriptors(SPPoint*** result_hist, char* path_dir, char* img_prefix, char* img_suffix, int num_images, int num_features, int* img_num_features);
+
+
+void HistogramsOrSiftsDestroy(SPPoint** hist_or_sift, int num_histograms);
+
+
+SPBPQueue* PutBestGlobalInQueue(SPPoint** query_rgb_hist, SPPoint*** img_rgb_hist, int num_images);
+
+
+int PrintBestGlobalFromQueue(SPBPQueue* best_queue);
+
+
+int* PutBestLocalInArray(sift_hits* img_sift_hits, SPPoint*** img_sift_descriptors, SPPoint** query_sift_descriptors, int num_images, int* img_num_features, int query_num_features);
+
+
+int PrintBestLocalFromArray(sift_hits* img_sift_hits);
+
+
+DestroyAllHistogramsAndSifts(SPPoint*** img_rgb_hist, SPPoint*** img_sift_descriptors,  int num_images, int* img_num_features);
 
 /*
 	if 'a' < 'b' : return value is positive
@@ -18,16 +80,6 @@ typedef struct ImageSiftHits
 	comparator for sorting the hits array
 */
 int sift_comparator(const void * a, const void * b);
-
-/*
-   Recursively frees all allocated memory in a 3d array
- */
-void free3DArray(void*** array, int dim0, int dim1);
-
-/*
-   Recursively frees all allocated memory in a 2d array
- */
-void free2DArray(void** array, int dim0);
 
 /*
    Reads input from the user, and removes '\n' inserted by fgets
