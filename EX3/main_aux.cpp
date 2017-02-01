@@ -99,7 +99,7 @@ SPBPQueue* PutBestGlobalInQueue(SPPoint** query_rgb_hist, SPPoint*** img_rgb_his
 	for (i = 0; i < num_images; i++)
 	{
 		dist = spRGBHistL2Distance(query_rgb_hist, img_rgb_hist[i]);
-		massage = spBPQueueEnqueue(best_queue, i, dist);
+		massage = spBPQueueEnqueue(best_queue, spPointGetIndex(img_rgb_hist[i][0]), dist);
 		if (!((SP_BPQUEUE_SUCCESS == massage) || (SP_BPQUEUE_FULL == massage))) {
 			printf(ERROR_ALLOCATION);
 			return NULL;
@@ -152,6 +152,7 @@ int PrintBestGlobalFromQueue(SPBPQueue* best_queue) {
 		printf(", %d", tmp_queue_element->index );
 	}
 	free(tmp_queue_element);
+	spBPQueueDestroy(best_queue);
 	printf("\n");
 	return 0;
 
