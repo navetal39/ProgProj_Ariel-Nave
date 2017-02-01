@@ -4,49 +4,43 @@
 
 /**
  * SP Bounded Priority Queue summary
- * Encapsulates a priority queue of a given size.
- * The elements of the queue have index and value and are ordered
- * by their values. 
- * 
+ *
+ * the queue has maxSize variable (int)- which determines the maximal length of the queue.
+ * the queue has size variable (int)- which determines the number of elements in the queue.
+ * the queue has arr variable (array of elements) - which stores the elements that are in the queue
+ *
+ *
  * The following functions are supported:
- *  
- * spBPQueueCreate			-Creates a new queue of given size
- * spBPQueueCopy			-Creates a new copy of a given queue
- * spBPQueueDestroy			-Frees all memory allocation associated with given queue
- * spBPQueueClear			-Removes all elemensts from the queue
- * spBPQueueSize			-Returns size of a given queue
- * spBPQueueGetMaxSize		-Returns the maximal size of a given queue
- * spBPQueueEnqueue			-Inserts a new element (of given index and value) to a given queue
- * spBPQueueDequeue			-Removes the element with the lowest value
- * spBPQueuePeek			-Returns a copy of the element with the lowest value
- * spBPQueuePeekLast		-Returns a copy of the element with the highest value
- * spBPQueueMinValue		-Returns the minimum value in the queue
- * spBPQueueMaxValue		-Returns the maximum value in the queue
- * spBPQueueIsEmpty			-Returns true if the queue is empty
- * spBPQueueIsFull			-Returns true if the queue is full
- * 
+ *
+ * spBPQueueCreate          - creates a new empty queue
+ * spBPQueueCopy            - creates a copy of a given queue
+ * spBPQueueDestroy         - free all resources associated with the queue
+ * spBPQueueClear           - resets the queue
+ * spBPQueueSize            - a getter of the real size of the queue
+ * spBPQueueGetMaxSize      - a getter of the maximum size of the queue
+ * spBPQueueEnqueue         - inserting an element to the queue with given index and value
+ * spBPQueueDequeue         - dequeue the minimum element from the queue
+ * spBPQueuePeek            - a getter of the minimal element in the queue (by value)
+ * spBPQueuePeekLast        - a getter of the maximal element in the queue (by value)
+ * spBPQueueMinValue        - a getter of the minimal value of an element in the queue
+ * spBPQueueMaxValue        - a getter of the maximal value of an element in the queue
+ * spBPQueueIsEmpty         - checks wether the queue is empty
+ * spBPQueueIsFull          - checks wether the queue is full
+ *
  */
 
-
-/** type used to define Bounded priority queue **/
-typedef struct sp_bp_queue_t SPBPQueue;
-
-/** Type for defining the elements **/
 typedef struct sp_bpq_element_t {
 	int index;
 	double value;
 } BPQueueElement;
 
-/** type for error reporting
- *
- * The following messages are defined:
- * SP_BPQUEUE_OUT_OF_MEMORY		-error allocating memory
- * SP_BPQUEUE_FULL				-queue is full, error in inserting
- * SP_BPQUEUE_EMPTY				-queue is empty, error in extracting
- * SP_BPQUEUE_INVALID_ARGUMENT	-NULL queue, error, invalid argument
- * SP_BPQUEUE_SUCCESS			-success message
- *
- **/
+
+/** type used to define Bounded priority queue **/
+typedef struct sp_bp_queue_t SPBPQueue;
+
+
+
+/** type for error reporting **/
 typedef enum sp_bp_queue_msg_t {
 	SP_BPQUEUE_OUT_OF_MEMORY,
 	SP_BPQUEUE_FULL,
@@ -56,141 +50,134 @@ typedef enum sp_bp_queue_msg_t {
 } SP_BPQUEUE_MSG;
 
 /**
- * Allocates a new SPBPQueue in the memory
- * Given a maximum size for the queue
- * Creates an array of size maxSize of BPQueueElements(allocation required)
- * @param maxSize - Maximum size of created queue
- * @assert maxSize > 0
+ * Allocates a new queue in the memory.
+ * Allocates the array of queue elements for the queue with size of maxSize
+ * setting all of the array to zeros
  * @return
- * A new SPBPQueue with maximum size maxSize
+ * NULL in case allocation failure ocurred 
+ * Otherwise, a pointer to the new queue is returned
  */
 SPBPQueue* spBPQueueCreate(int maxSize);
 
-
 /**
- * Allocates a copy of the given SPBPQueue
- *
- * Creates an array of size maxSize of BPQueueElements(allocation required)
- * @param source - queue to be copied
- * @assert source != NULL
+ * Allocates a copy of the given queue 
+ * copying the parameters of the source queue to the new one
+ * @param source - The source queue
+ * @assert (source != NUlL)
  * @return
- * A new SPBPQueue with same elments as source
- * and NULL in case memory allocation error occurs
+ * NULL in case memory allocation fails
+ * Others a copy of source is returned.
  */
 SPBPQueue* spBPQueueCopy(SPBPQueue* source);
 
 /**
- * Frees all memory allocation associated with source,
- * if source is NULL nothing happens.
+ * Free all memory allocation associated with queue,
+ * if queue is NULL nothing happens.
  */
-
 void spBPQueueDestroy(SPBPQueue* source);
 
-
 /**
- * removes all elemensts from the queue
- * @param source - queue to be clear
- * @assert source != NULL
+ * setting the array in the queue to zeros (reseting it)
  */
 void spBPQueueClear(SPBPQueue* source);
 
 /**
- * returns size of queue
- * @param source - the queue that we want it's size
+ * A getter for the number of elements in queue
+ *
+ * @param queue - the source queue
  * @assert source != NULL
  * @return
- * the size of the queue
+ * the real size of the queue (not max size)
  */
 int spBPQueueSize(SPBPQueue* source);
 
 /**
- * returns the maximal size of the queue
- * @param source - the queue that we want it's maximal size
+ * A getter for the nmax size of the queue
+ *
+ * @param queue - the source queue
  * @assert source != NULL
  * @return
- * the maximal size of the queue
+ * the maximum size of the queue (not max size)
  */
 int spBPQueueGetMaxSize(SPBPQueue* source);
 
 /**
- * inserts new element (index and value) to the queue
- * @param source - the queue that we want to insert to it
- * @param index - the index of the element we enqueue
- * @param value - the value of the element we enqueue
+ * inserting an element to the queue with given index and value
+ * by searching the right place to insert it (by value)
+ *
+ * @param queue - the source queue
+ * index (int) fro the new element
+ * value (double) fro the new element
  * @return
- * SP_BPQUEUE_INVALID_ARGUMENT 	if source is NULL
- * SP_BPQUEUE_FULL 				if queue is full and value is too large to insert the new element
- * SP_BPQUEUE_SUCCESS 			if the element has been enqueued
+ * a massage that indicates what went wrong / went good 
  */
 SP_BPQUEUE_MSG spBPQueueEnqueue(SPBPQueue* source, int index, double value);
 
 /**
- * removes the element with the lowest value
- * @param source - the queue that we want to insert to it
+ * dequeuing the element with the minimal value from the queue (if the same value - with the minimal index)
+ *
+ * @param queue - the source queue
  * @return
- * SP_BPQUEUE_INVALID_ARGUMENT 	if source is NULL
- * SP_BPQUEUE_EMPTY 			if queue is empty
- * SP_BPQUEUE_SUCCESS 			if the element has been dequeued
+ * a massage that indicates what went wrong / went good 
  */
 SP_BPQUEUE_MSG spBPQueueDequeue(SPBPQueue* source);
 
 /**
- * puts a copy of the element with the lowest value in given address
- * @param source - queue to peek from
- * @param res - the adress to write the lowest value
+ * 
+ * a getter of the minimal element in the queue (by value)
+ *
+ * @param queue - the source queue
  * @return
- * SP_BPQUEUE_INVALID_ARGUMENT 	if source is NULL
- * SP_BPQUEUE_EMPTY				if queue is empty
- * SP_BPQUEUE_SUCCESS			if the element has been peeked
+ * a massage that indicates what went wrong / went good 
  */
 SP_BPQUEUE_MSG spBPQueuePeek(SPBPQueue* source, BPQueueElement* res);
 
 /**
- * puts a copy of the element with the highest value in given address
- * @param source - queue to peek from
- * @param res - the adress to write the highest value
+ * a getter of the maximal element in the queue (by value)
+ *
+ * @param queue - the source queue
  * @return
- * SP_BPQUEUE_INVALID_ARGUMENT 	if source is NULL
- * SP_BPQUEUE_EMPTY				if queue is empty
- * SP_BPQUEUE_SUCCESS			if the element has been peeked
+ * a massage that indicates what went wrong / went good 
  */
 SP_BPQUEUE_MSG spBPQueuePeekLast(SPBPQueue* source, BPQueueElement* res);
 
 /**
- * returns the minimum value in given queue
- * @param source - queue we want it's minimal value
- * @assert source != NULL and source's size is larger than zero
+ * returns the minimum value of an element in the queue
+ *
+ * @param queue - the source queue
+ * @assert source != NULL && source->arr != NULL
  * @return
- * the minimal value of the queue
+ * the minimum value in the queue
  */
 double spBPQueueMinValue(SPBPQueue* source);
 
 /**
- * returns the maximum value in given queue
- * @param source - queue we want it's minimal value
- * @assert source != NULL and source's size is larger than zero
+ * returns the maximum value of an element in the queue
+ *
+ * @param queue - the source queue
+ * @assert source != NULL && source->arr != NULL
  * @return
- * the maximal value of the queue
+ * the maximum value in the queue
  */
 double spBPQueueMaxValue(SPBPQueue* source);
 
 /**
- * returns true if the queue is empty
- * @param source - queue to check
+ * returns true if and only if the queue is empty
+ *
+ * @param queue - the source queue
  * @assert source != NULL
  * @return
- * true if queue is empty
- * false o.w.
+ * boolean value that is true only in the condition above
  */
 bool spBPQueueIsEmpty(SPBPQueue* source);
 
 /**
- * returns true if the queue is full
- * @param source - queue to check
+ * returns true if and only if the queue is full
+ *
+ * @param queue - the source queue
  * @assert source != NULL
  * @return
- * true if queue is full
- * false o.w.
+ * boolean value that is true only in the condition above
  */
 bool spBPQueueIsFull(SPBPQueue* source);
 
