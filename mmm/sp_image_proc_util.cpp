@@ -1,94 +1,90 @@
+extern "C" {
+#include "SPPoint.h"
+#include "SPBPriorityQueue.h"
+}
+
+#include "sp_image_proc_util.h"
 #include <opencv2/imgproc.hpp>//calcHist
 #include <opencv2/core.hpp>//Mat
-#include <opencv2/highgui.hpp>
-#include <opencv2/xfeatures2d.hpp>//SiftDescriptorExtractor
-#include <opencv2/features2d.hpp>
-#include <vector>
+#include <opencv2/xfeatures2d.hpp>
+#include <opencv2/opencv.hpp>
 #include <cstdio>
 #include <cstdlib>
-#include "sp_image_proc_util.h"
-extern "C"{
-	#include "SPBPriorityQueue.h"
-}
-using namespace cv;
 
-#define COLOR_NUM 3
-#define COLOR_RANGE_MAX 256
-#define COLOR_RANGE_MIN 0
-#define UNLOADABLE_IMAGE "Image cannot be loaded - %s\n"
 #define ALLOC_ERROR "An error occurred - allocation failure\n"
 
-SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
-{
-	/* check if input is valid. */
-	if(str==NULL || nBins<=0)
-	{
+using namespace cv;
+
+SPPoint** spGetRGBHist(const char* str, int imageIndex, int nBins) {
+	//declaring variables
+	Mat b_hist, g_hist, r_hist, src = imread(str, CV_LOAD_IMAGE_COLOR);
+	SPPoint **arr;
+	if(!(arr = (SPPoint**)malloc(3*sizeof(SPPoint*)))){
+		printf(ALLOC_ERROR);
 		return NULL;
 	}
-	Mat src;
-	Mat hists[COLOR_NUM];
-	int i, j;
-	double* data ;
-	/* define range of colors. */
-	float range[] = {COLOR_RANGE_MIN, COLOR_RANGE_MAX};
+	double *data_arr;
+	int forLoops;
+	//allocating place for our data array
+	if (!(data_arr = (double*)malloc(nBins * sizeof(double)))) {
+		printf(ALLOC_ERROR);
+		return NULL;
+	}
+	float range[] = {0, 256};
 	const float* histRange = {range};
-	/* define and allocate memory for returning array */
-	SPPoint** retArr = (SPPoint**)malloc(COLOR_NUM*sizeof(SPPoint*));
-	if(retArr == NULL)
-	{
-		printf(ALLOC_ERROR);
+	if (src.empty()) {
 		return NULL;
 	}
-	/* obtain and split image data. */
-	src = imread(str, CV_LOAD_IMAGE_COLOR);
-	if(src.empty())
-	{
-		printf(UNLOADABLE_IMAGE, str);
-		return NULL;
-	}
-	std::vector<Mat> bgr_planes; // TODO help please
+	//calculating histograms
+	Mat bgr_planes[3];
 	split(src, bgr_planes);
-	/* calculate histograms for each color */
-	for(i = 0; i<COLOR_NUM; i++)
-	{
-		calcHist(&bgr_planes[i], 1, 0, Mat(), hists[i], 1, &nBins, &histRange);
-	}
-	/* convert data from matrix form to SPPoints form */
-	data = (double*)malloc(hists[0].rows * sizeof(double));
-	if(data == NULL)
-	{
-		printf(ALLOC_ERROR);
+	calcHist(&bgr_planes[0], 1, 0, Mat(), b_hist, 1, &nBins, &histRange);
+	calcHist(&bgr_planes[1], 1, 0, Mat(), g_hist, 1, &nBins, &histRange);
+	calcHist(&bgr_planes[2], 1, 0, Mat(), r_hist, 1, &nBins, &histRange);
+	//inserting the histogram values to the data array
+	for (forLoops = 0; forLoops < nBins; ++forLoops)
+		data_arr[forLoops] = (double)r_hist.at<float>(forLoops);
+	//creating point for the array to be returned
+	if (!(arr[0] = spPointCreate(data_arr, nBins, imageIndex))) {
+		free(data_arr);
+		free(arr);
 		return NULL;
 	}
-	for(i=0; i<COLOR_NUM; i++)
-	{
-		for(j=0; j<hists[0].rows; j++)
-		{
-			data[j] = hists[i].at<double>(j,0);
-		}
-		retArr[i] = spPointCreate(data, hists[0].rows, imageIndex);
+	//repeating for other colours
+	for (forLoops = 0; forLoops < nBins; ++forLoops)
+		data_arr[forLoops] = (double)g_hist.at<float>(forLoops);
+
+	if (!(arr[1] = spPointCreate(data_arr, nBins, imageIndex))) {
+		free(data_arr);
+		spPointDestroy(arr[0]);
+		free(arr);
+		return NULL;
 	}
-	free(data);
-	/* return. */
-	return retArr;
+	for (forLoops = 0; forLoops < nBins; ++forLoops)
+		data_arr[forLoops] = (double)b_hist.at<float>(forLoops);
+
+	if (!(arr[2] = spPointCreate(data_arr, nBins, imageIndex))) {
+		free(data_arr);
+		spPointDestroy(arr[0]);
+		spPointDestroy(arr[1]);
+		free(arr);
+		return NULL;
+	}
+	//freeing and returning :-)
+	free(data_arr);
+	return arr;
 }
-double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB)
-{
-	/* check if input is valid. */
-	if(rgbHistA == NULL || rgbHistB == NULL)
-	{
-		return -1;
-	}
-	int i;
-	double distance;
-	/* calculate the distance. */
-	for(i=0;i<COLOR_NUM;i++)
-	{
-		distance += 0.33*spPointL2SquaredDistance(rgbHistA[i], rgbHistB[i]);
-	}
-	/* return. */
-	return distance;
+
+double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB) {
+	//declaring variables
+	double d1, d2, d3;
+	d1 = spPointL2SquaredDistance(rgbHistA[0], rgbHistB[0]);
+	d2 = spPointL2SquaredDistance(rgbHistA[1], rgbHistB[1]);
+	d3 = spPointL2SquaredDistance(rgbHistA[2], rgbHistB[2]);
+	//returning mean value
+	return (0.33 * d1 + 0.33 * d2 + 0.33 * d3);
 }
+
 SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToExtract, int *nFeatures) {
 	//loading image in grayscale format for feature extraction
 	Mat src = imread(str, CV_LOAD_IMAGE_GRAYSCALE), desc;
@@ -129,6 +125,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 			for (j = 0; j < i; ++j) {
 				spPointDestroy(retFeatures[j]);
 			}
+			printf("POINTFAIL\n");
 			free(retFeatures);
 			return NULL;
 		}
@@ -139,100 +136,41 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 	//returning
 	return retFeatures;
 }
-int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint*** databaseFeatures,
-		int numberOfImages, int* nFeaturesPerImage)
-{
-	/* check if input is valid. */
-	if(queryFeature == NULL || databaseFeatures == NULL || 
-		nFeaturesPerImage == NULL || numberOfImages <= 1)
-	{
+int* spBestSIFTL2SquaredDistance(int kCloses, SPPoint* queryFeature,
+                                 SPPoint*** databaseFeatures, int numberOfImages, int* nFeaturesPerImage) {
+	//declaring variables
+	int i, j, *toRet;
+	BPQueueElement res;
+	//creating the queue to store the closest features
+	SPBPQueue *ourQueue = spBPQueueCreate(kCloses);
+	//making sure arguments are valid
+	if (!queryFeature || !databaseFeatures || !nFeaturesPerImage) {
 		return NULL;
 	}
-	int i, j, finalSize, currentIndex;
-	int* bestIndexes;
-	double currentDistance;
-	BPQueueElement* currElement;
-	SPPoint* currentPoint;
-	SPBPQueue* queue;
-	SP_BPQUEUE_MSG msg;
-
-	/* create queue to be used later. */
-	// printf("aaa\n");
-	queue = spBPQueueCreate(kClosest);
-	// printf("bbb\n");
-	if(queue == NULL) 	// This check allows us to not have to check for "bad argument" return
-						//message with Enqueue, Dequeue and Peek.
-	{
-		// printf("errorerrorerror\n");
-		return NULL;
-	}
-	/* enqueue image indexes according to calculated distance. */
-	for(i=0; i<numberOfImages; i++)
-	{
-		// printf("ccc\n");
-		for(j=0; j<nFeaturesPerImage[i]; j++)
-		{
-			// printf("ddd\n");
-			currentPoint = databaseFeatures[i][j];
-			// printf("eee\n");
-			// printf("%s %s\n", (currentPoint==NULL)?"YES":"NO", (queryFeature==NULL)?"YES":"NO");
-			currentDistance = spPointL2SquaredDistance(currentPoint, queryFeature);
-			// printf("fff\n");
-			currentIndex = spPointGetIndex(currentPoint);
-			// printf("ggg\n");
-			msg = spBPQueueEnqueue(queue, currentIndex, currentDistance);
-			// printf("hhh\n");
-		}
-		// printf("iii\n");
-	}
-	// printf("jjj\n");
-	free(currentPoint);
-	// printf("kkk\n");
-	/* extract the best images from queue into returning array and get rid of it. */
-	finalSize = spBPQueueSize(queue);
-	// printf("lll\n");
-	bestIndexes = (int*)malloc(finalSize*sizeof(int));
-	// printf("mmm\n");
-	if(bestIndexes != NULL)
-	{
-		// printf("nnn\n");
-		currElement = (BPQueueElement*) malloc(sizeof(BPQueueElement));
-		// printf("ooo\n");
-		if(currElement != NULL)
-		{
-			// printf("ppp\n");
-			for(i=0; i<finalSize; i++)
-			{
-				// printf("qqq\n");
-				msg = spBPQueuePeek(queue, currElement);
-				// printf("rrr\n");
-				if(msg == SP_BPQUEUE_EMPTY)	// Prevents us from having to check if msg is "empty" at dequeue.
-											// Should never happen aniway, but just in case...
-				{
-					// printf("moreerrorwtf\n");
-					spBPQueueDestroy(queue);
-					return NULL;
-				}
-				// printf("sss\n");
-				bestIndexes[i] = currElement->index;
-				// printf("ttt\n");
-				msg = spBPQueueDequeue(queue);
-				// printf("uuu\n");
-			}
-			// printf("vvv\n");
-			free(currElement);
-			// printf("www\n");
-		}else{
-			// printf("asdfjklhasdfklasdkljf\n");
-			printf(ALLOC_ERROR);
-		}
-	}else{
-		// printf("asdfehjuuikiljhklkjlhjkvvvvv\n");
+	//allocating memory for the returned *int
+	if (!(toRet = (int *)(malloc(sizeof(int) * kCloses)))) {
 		printf(ALLOC_ERROR);
+		return NULL;
 	}
-	// printf("xxx\n");
-	spBPQueueDestroy(queue);
-	// printf("yyy\n");
-	/* return. */
-	return bestIndexes;
+	//iterates over all the points and enqueues them
+	for (i = 0; i < numberOfImages; ++i) {
+		for (j = 0; j < nFeaturesPerImage[i]; ++j) {
+			spBPQueueEnqueue(ourQueue, i, spPointL2SquaredDistance(databaseFeatures[i][j], queryFeature));
+		}
+	}
+	//extracting the kCloses closest elements of the queue
+	//and inserting their index(the image they belong to) to the array toRet
+	for (i = 0; i < kCloses; ++i) {
+		if (spBPQueuePeek(ourQueue, &res) == SP_BPQUEUE_INVALID_ARGUMENT) {
+			spBPQueueDestroy(ourQueue);
+			free (toRet);
+			return NULL;
+		}
+		spBPQueueDequeue(ourQueue);
+		toRet[i] = res.index;
+	}
+	//destroying
+	spBPQueueDestroy(ourQueue);
+	//returning :-)
+	return toRet;
 }

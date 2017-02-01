@@ -30,7 +30,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins);
  * @param rgbHistB - RGB histogram of image B
  * @return 
  *		  -1 if:
- *			rgbHistA/rgbHistB is null, 
+ *		     - numOfChannels <= 0 or rgbHistA/rgbHistB is null, 
  *		  otherwise the average L2-squared distance.
  */
 double spRGBHistL2Distance(SPPoint** rgbHistA, SPPoint** rgbHistB);

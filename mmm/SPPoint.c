@@ -1,83 +1,101 @@
 #include "SPPoint.h"
-#include <stdlib.h>
-#include <stdio.h>
 #include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-struct sp_point_t {
-	int index;
+//defines the struct point with fields
+//data pointer, dimension and index
+struct sp_point_t{
+	double *data;
 	int dim;
-	double* data;
+	int index;
 };
 
-SPPoint* spPointCreate(double* data, int dim, int index) {
-	SPPoint* new_point = NULL;
-	new_point = (SPPoint*) malloc(sizeof(SPPoint));
-	if (new_point == NULL) {
+SPPoint* spPointCreate(double *data, int dim, int index){
+	//declare variables
+	SPPoint *point;
+	int forLoops;
+	//returns NULL in case data is NULL
+	if(!data){
 		return NULL;
 	}
-
-	if (data == NULL || dim <= 0 || index < 0)
-	{
-		free(new_point);
+	//returns NULL in case dimension is non-positive
+	if(dim <= 0){
 		return NULL;
 	}
-
-	new_point->index = index;
-	new_point->dim = dim;
-	new_point->data = (double*) malloc(dim * sizeof(double));
-	if (new_point->data == NULL)
-	{
-		free(new_point);
+	//return NULL in case index is negative
+	if(index<0){
 		return NULL;
 	}
-	int i;
-	for (i = 0; i < dim; ++i) {
-		new_point->data[i] = data[i];
+	//memory allocation
+	if(!(point = (SPPoint *)malloc(sizeof(*point)))) {
+		return NULL;
 	}
-	return new_point;
+	
+	if(!(point->data = (double *)malloc(dim*sizeof(double)))) {
+		return NULL;
+	}
+	//update fields of the new point
+	for(forLoops = 0; forLoops<dim; ++forLoops){
+		(point->data)[forLoops] = data[forLoops];
+	}
+	point->dim = dim;
+	point->index = index;
+	//returns a pointer to the new point
+	return point;
 }
 
-
-SPPoint* spPointCopy(SPPoint* source) {
-	assert (source != NULL);
+SPPoint* spPointCopy(SPPoint *source){
+	//makes sure source is not NULL
+	assert(source);
+	//returns a new point with same fields as source
 	return spPointCreate(source->data, source->dim, source->index);
 }
 
-void spPointDestroy(SPPoint* point) {
-	if (point != NULL)
-	{
-		free(point->data);
-		free(point);
+void spPointDestroy(SPPoint *point){
+	//nothing to do if point is NULL
+	if(!point){
+		return;
 	}
+	//frees memory we used
+	free(point->data);
+	free(point);
 }
 
-int spPointGetDimension(SPPoint* point) {
-	assert(point != NULL);
+int spPointGetDimension(SPPoint* point){
+	//makes sure point is not NULL
+	assert(point);
+	//returns point's dimension
 	return point->dim;
 }
 
-int spPointGetIndex(SPPoint* point) {
-	assert(point != NULL);
+int spPointGetIndex(SPPoint* point){
+	//makes sure point is not NULL
+	assert(point);
+	//returns point's index
 	return point->index;
 }
 
-double spPointGetAxisCoor(SPPoint* point, int axis) {
-	assert (point != NULL && axis < point->dim);
-	return (point->data)[axis];
+
+double spPointGetAxisCoor(SPPoint* point, int axis){
+	//makes sure point is not NULL
+	//and axis is smaller then the dimension
+	assert(point && (axis<point->dim)&&axis>=0);
+	//returns the data in the suitable axis
+	return point->data[axis];
 }
-double spPointL2SquaredDistance(SPPoint* p, SPPoint* q) {
-	assert(p != NULL);
-	assert (q != NULL);
-	assert (p->data != NULL && q->data != NULL && p->dim == q->dim);
-	double current_dist ;
-	current_dist = 0;
+
+double spPointL2SquaredDistance(SPPoint* p, SPPoint* q){
+	//makes sure both points are
+	//not NULL and they are of equal dimension
+	assert(p && q && p->dim == q->dim);
+	//declares and initializes variables
 	int i;
-	if(q->data == NULL)
-		printf("Bad q");
-	if(p->data == NULL)
-		printf("Bad p");
-	for (i = 0; i < p->dim; ++i) {
-		current_dist += ((q->data)[i] - (p->data)[i]) * ((q->data)[i] - (p->data)[i]);
+	double sum=0;
+	//computes the distance squared
+	for(i = 0; i < p->dim; ++i){
+		sum += (p->data[i] - q->data[i])*(p->data[i] - q->data[i]);
 	}
-	return current_dist;
+	//returns what we have got :-)
+	return sum;
 }
