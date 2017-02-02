@@ -11,12 +11,14 @@ extern "C"{
 }
 using namespace cv;
 
+/* Error messages */
+#define ERR_IMG_LOAD "Image cannot be loaded - %s\n"
+#define ERR_ALLOC "An error occurred - allocation failure\n"
+/* Constants */
 #define COLOR_NUM 3
 #define COLOR_RANGE_MAX 256
 #define COLOR_RANGE_MIN 0
-#define UNLOADABLE_IMAGE "Image cannot be loaded - %s\n"
-#define ALLOC_ERROR "An error occurred - allocation failure\n"
-
+/* Macros */
 #define ERASE_QUEUE(queue) do{\
 		while(!spBPQueueIsEmpty((queue)))\
 		{\
@@ -47,14 +49,14 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 	SPPoint** retArr = (SPPoint**)malloc(COLOR_NUM*sizeof(SPPoint*));
 	if(retArr == NULL)
 	{
-		printf(ALLOC_ERROR);
+		printf(ERR_ALLOC);
 		return NULL;
 	}
 	/* obtain and split image data. */
 	src = imread(str, CV_LOAD_IMAGE_COLOR);
 	if(src.empty())
 	{
-		printf(UNLOADABLE_IMAGE, str);
+		printf(ERR_IMG_LOAD, str);
 		return NULL;
 	}
 	split(src, bgr_planes);
@@ -68,7 +70,7 @@ SPPoint** spGetRGBHist(const char* str,int imageIndex, int nBins)
 	if(data == NULL)
 	{
 		free(retArr);
-		printf(ALLOC_ERROR);
+		printf(ERR_ALLOC);
 		return NULL;
 	}
 	for(i=0; i<COLOR_NUM; i++)
@@ -132,7 +134,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 	src = imread(str, CV_LOAD_IMAGE_GRAYSCALE);
 	if (src.empty())
 	{
-		printf(UNLOADABLE_IMAGE, str);
+		printf(ERR_IMG_LOAD, str);
 		return NULL;
 	}
 	/* extract features. */
@@ -146,14 +148,14 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 	features = (SPPoint**)malloc(*nFeatures * sizeof(SPPoint*));
 	if (features == NULL)
 	{
-		printf(ALLOC_ERROR);
+		printf(ERR_ALLOC);
 		return NULL;
 	}
 	/* convert features from matrix form to SPPoint form. */
 	currentFeature = (double*)malloc(siftDim*sizeof(double));
 	if(currentFeature == NULL)
 	{
-		printf(ALLOC_ERROR);
+		printf(ERR_ALLOC);
 		free(features);
 		return NULL;
 	}
@@ -166,7 +168,7 @@ SPPoint** spGetSiftDescriptors(const char* str, int imageIndex, int nFeaturesToE
 		features[i] = spPointCreate(currentFeature, siftDim, imageIndex);
 		if(features[i] == NULL)
 		{
-			printf(ALLOC_ERROR);
+			printf(ERR_ALLOC);
 			for(k=0;k<i;k++)
 			{
 				spPointDestroy(features[i]);
@@ -202,7 +204,7 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 	if(queue == NULL) 	// This check allows us to not have to check for "bad argument" return
 						//message with Enqueue, Dequeue and Peek.
 	{
-		printf(ALLOC_ERROR);
+		printf(ERR_ALLOC);
 		return NULL;
 	}
 	/* enqueue image indexes according to calculated distance. */
@@ -239,7 +241,7 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 			msg = spBPQueueDequeue(queue);
 		}
 	}else{
-		printf(ALLOC_ERROR);
+		printf(ERR_ALLOC);
 		// No need to return, since the last 2 line are all that
 		// we need so we might as well just let them execute.
 	}
