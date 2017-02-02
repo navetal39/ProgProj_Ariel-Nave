@@ -21,14 +21,20 @@ extern "C" {
 #define MSG_EXIT "Exiting...\n"
 /* Constants */
 #define RET_SUCCESS 0
-#define RET_FAIL 1
+#define RET_FAIL -1
 #define INPUT_LEN 1024
+#define NULL_CHAR '\0'
 #define TERM_SIGN "#"
 /* Macros */
 #define SHOULD_RUN(qp) strcmp((qp), TERM_SIGN)
 
+int readStr(char* buff);
+int readInt(int* buff);
+
 int getInputFromUser(char* dirPath, char* imgPrefix, int* imgNum, char* imgSuffix,
 					 int* binNum, int* featureNum);
+
+int getQueryPath(char* queryPath);
 
 int getImgData(char* queryPath, int binNum, int featureNum,
 				 SPPoint** queryHist, SPPoint** queryFeatures);
@@ -37,12 +43,13 @@ int getImgDataMult(char* dirPath, char* imgPrefix, int* imgNum, char* imgSuffix,
 			   int binNum, int featureNum, int* featuresPerImage,
 			   SPPoint*** imgsHists, SPPoint*** imgsFeatures);
 
-int getQueryPath(char* queryPath);
-
 int getBestImages(SPPoint*** imgsHists, SPPoint*** imgsFeatures,
 				  SPPoint** queryHist, SPPoint** queryFeatures,
 				  int imgNum, int* featuresPerImage,
 				  int* bestRGBImages, int* bestSIFTImages, int* bestRGBCount, int* bestSIFTCount);
+
 int printResults(int* bestRGBImages, int* bestSIFTImages, int bestRGBCount, int bestSIFTCount);
+
 int cleanUp(SPPoint** hist, SPPoint** features);
+
 int cleanUpMult(SPPoint*** hists, SPPoint*** features);
