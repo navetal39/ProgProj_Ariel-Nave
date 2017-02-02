@@ -1,7 +1,6 @@
-
 #include <cstdio>
-#include <cstring>
 #include <cstdlib>
+#include <cstring>
 
 #include "main_aux.h"
 
