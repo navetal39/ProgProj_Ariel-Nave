@@ -25,7 +25,7 @@ extern "C" {
 #define INPUT_LEN 1024
 #define TERM_SIGN "#"
 /* Macros */
-#define SHOULD_RUN(qp) strcmp((qp), TERM_SIGN);
+#define SHOULD_RUN(qp) strcmp((qp), TERM_SIGN)
 
 int getInputFromUser(char* dirPath, char* imgPrefix, int* imgNum, char* imgSuffix,
 					 int* binNum, int* featureNum);

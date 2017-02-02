@@ -5,7 +5,7 @@
 
 int main()
 {
-	int retVal, imgNum, binNum, featureNum, bestRGBCount, bestSIFTCount
+	int retVal, imgNum, binNum, featureNum, bestRGBCount, bestSIFTCount,
 		*featuresPerImage, *bestRGBImages, *bestSIFTImages;
 	char dirPath[INPUT_LEN+1], imgPrefix[INPUT_LEN+1], imgSuffix[INPUT_LEN+1],
 		 queryPath[INPUT_LEN+1];
@@ -22,11 +22,11 @@ int main()
 		{
 			retVal = getImgData(queryPath, binNum, featureNum,
 								queryHist, queryFeatures);
-			retval = getBestImages(imgsHists, imgsFeatures, queryHist, queryFeatures,
+			retVal = getBestImages(imgsHists, imgsFeatures, queryHist, queryFeatures,
 								   imgNum, featuresPerImage,
 								   bestRGBImages, bestSIFTImages, &bestRGBCount, &bestSIFTCount);
-			retval = printResults(bestRGBImages, bestSIFTImages, bestRGBCount, bestSIFTCount);
-			retval = cleanUp(queryHist, queryFeatures);
+			retVal = printResults(bestRGBImages, bestSIFTImages, bestRGBCount, bestSIFTCount);
+			retVal = cleanUp(queryHist, queryFeatures);
 			free(bestRGBImages);
 			free(bestSIFTImages);
 		}
