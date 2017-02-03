@@ -1,7 +1,0 @@
-Full Name 1: Ori Friedlender
-Id No 1: 318415247
-User Name 1: friedlender
-Full Name 2: Amit Atsmon
-Id No 2: 208989475
-User Name 2: amitatsmon
-Assignment No: 3
