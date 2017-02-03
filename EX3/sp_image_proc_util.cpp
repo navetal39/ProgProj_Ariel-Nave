@@ -193,7 +193,7 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 		return NULL;
 	}
 	int i, j, finalSize, currentIndex;
-	int* bestIndexes;
+	int* bestIndices;
 	double currentDistance;
 	BPQueueElement currElement;
 	SPPoint* currentPoint;
@@ -201,13 +201,13 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 	SP_BPQUEUE_MSG msg;
 	/* create queue to be used later. */
 	queue = spBPQueueCreate(kClosest);
-	if(queue == NULL) 	// This check allows us to not have to check for "bad argument" return
+	if(queue == NULL)	// This check allows us to not have to check for "bad argument" return
 						//message with Enqueue, Dequeue and Peek.
 	{
 		printf(ERR_ALLOC);
 		return NULL;
 	}
-	/* enqueue image indexes according to calculated distance. */
+	/* enqueue image Indices according to calculated distance. */
 	for(i=0; i<numberOfImages; i++)
 	{
 		for(j=0; j<nFeaturesPerImage[i]; j++)
@@ -225,8 +225,8 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 	}
 	/* extract the best images from queue into returning array and get rid of it. */
 	finalSize = spBPQueueSize(queue);
-	bestIndexes = (int*)malloc(finalSize*sizeof(int));
-	if(bestIndexes != NULL)
+	bestIndices = (int*)malloc(finalSize*sizeof(int));
+	if(bestIndices != NULL)
 	{
 		for(i=0; i<finalSize; i++)
 		{
@@ -234,10 +234,10 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 			if(msg != SP_BPQUEUE_SUCCESS)
 			{
 				ERASE_QUEUE(queue)
-				free(bestIndexes);
+				free(bestIndices);
 				return NULL;
 			}
-			bestIndexes[i] = currElement.index;
+			bestIndices[i] = currElement.index;
 			msg = spBPQueueDequeue(queue);
 		}
 	}else{
@@ -247,5 +247,5 @@ int* spBestSIFTL2SquaredDistance(int kClosest, SPPoint* queryFeature, SPPoint***
 	}
 	ERASE_QUEUE(queue);
 	/* return. */
-	return bestIndexes;
+	return bestIndices;
 }
