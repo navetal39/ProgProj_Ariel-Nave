@@ -1,0 +1,7 @@
+TODO:
+ - Finish logger
+ - Finish config
+ - Finish unit tests
+ - Implement KDTree
+ - Use imgProc library
+ - More stuff
