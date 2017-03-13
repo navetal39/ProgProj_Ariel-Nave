@@ -87,6 +87,7 @@ typedef struct sp_config_t* SPConfig;
 		config->var = (val);
 		wereSet[OFFSET_var] = true;
 	}while(0);
+
 /**
  * Creates a new system configuration struct. The configuration struct
  * is initialized based on the configuration file given by 'filename'.
@@ -113,31 +114,15 @@ typedef struct sp_config_t* SPConfig;
  */
 SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg);
 
-/*
- * Returns true if spExtractionMode = true, false otherwise.
- *
- * @param config - the configuration structure
- * @assert msg != NULL
- * @param msg - pointer in which the msg returned by the function is stored
- * @return true if spExtractionMode = true, false otherwise.
- *
- * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
- * - SP_CONFIG_SUCCESS - in case of success
- */
-bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigInitConfig(spConfig config, bool wersSet[]);
 
-/*
- * Returns true if spMinimalGUI = true, false otherwise.
- *
- * @param config - the configuration structure
- * @assert msg != NULL
- * @param msg - pointer in which the msg returned by the function is stored
- * @return true if spExtractionMode = true, false otherwise.
- *
- * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
- * - SP_CONFIG_SUCCESS - in case of success
- */
-bool spConfigMinimalGui(const SPConfig config, SP_CONFIG_MSG* msg);
+SP_CONFIG_MSG spConfigGetLine(spConfigCreate config, File* f);
+
+char* spConfigGetImgDir(const spConfigCreate config, SP_CONFIG_MSG* msg);
+
+char* spConfigGetImgPrefix(const spConfigCreate config, SP_CONFIG_MSG* msg);
+
+char* spConfigGetImgSuffix(const spConfigCreate config, SP_CONFIG_MSG* msg);
 
 /*
  * Returns the number of images set in the configuration file, i.e the value
@@ -153,6 +138,21 @@ bool spConfigMinimalGui(const SPConfig config, SP_CONFIG_MSG* msg);
  */
 int spConfigGetNumOfImages(const SPConfig config, SP_CONFIG_MSG* msg);
 
+/**
+ * Returns the dimension of the PCA. i.e the value of spPCADimension.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
+int spConfigGetPCADim(const SPConfig config, SP_CONFIG_MSG* msg);
+
+char* spConfigGetPCAFile(const spConfig config, SP_CONFIG_MSG* msg);
+
 /*
  * Returns the number of features to be extracted. i.e the value
  * of spNumOfFeatures.
@@ -167,18 +167,41 @@ int spConfigGetNumOfImages(const SPConfig config, SP_CONFIG_MSG* msg);
  */
 int spConfigGetNumOfFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
 
-/**
- * Returns the dimension of the PCA. i.e the value of spPCADimension.
+/*
+ * Returns true if spExtractionMode = true, false otherwise.
  *
  * @param config - the configuration structure
  * @assert msg != NULL
  * @param msg - pointer in which the msg returned by the function is stored
- * @return positive integer in success, negative integer otherwise.
+ * @return true if spExtractionMode = true, false otherwise.
  *
  * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
  * - SP_CONFIG_SUCCESS - in case of success
  */
-int spConfigGetPCADim(const SPConfig config, SP_CONFIG_MSG* msg);
+bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg);
+
+int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg);
+
+SP_KDT_SPLIT spConfgGetSplitMethod(const spConfig config, SP_CONFIG_MSG* msg);
+
+bool spConfigGetNumOfSimilarFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Returns true if spMinimalGUI = true, false otherwise.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return true if spExtractionMode = true, false otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
+bool spConfigMinimalGui(const SPConfig config, SP_CONFIG_MSG* msg);
+
+int spConfigGetLogLevel(const SPConfig config, SP_CONFIG_MSG* msg);
+
+char* spConfigGetLogLevel(const SPConfig config, SP_CONFIG_MSG* msg);
 
 /**
  * Given an index 'index' the function stores in imagePath the full path of the
