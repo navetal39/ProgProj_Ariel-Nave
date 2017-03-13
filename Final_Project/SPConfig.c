@@ -37,6 +37,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	FILE* f;
 	SP_CONFIG_MSG retMsg;
 	bool wersSet[VARS_COUNT] = {false};
+	int lineNum = -1, read;
 	f = fopen(filename, "r");
 	if(f == NULL)
 	{
@@ -46,9 +47,11 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	}
 	spConfigInitConfig(config, wersSet)
 	do{
-		retMsg = spConfigGetLine(config, f);
-	}while(retMsg != SP_CONFIG_SUCCESS);
-	return NULL; // TODO finish
+		read = spConfigGetLine(config, f, &retMsg);
+		lineNum++;
+	}while(retMsg != SP_CONFIG_SUCCESS && read != 0);
+	// TODO check exit stuff
+	return config;
 }
 
 void spConfigInitConfig(spConfig config, bool wersSet[])
@@ -64,9 +67,9 @@ void spConfigInitConfig(spConfig config, bool wersSet[])
 	cfgSet(logLvl, DEFAULT_LOG_LEVEL);
 	cfgSet(logFile, DEFAULT_LOG_FILE);
 }
-SP_CONFIG_MSG spConfigGetLine(spConfigCreate config, File* f)
+int spConfigGetLine(spConfigCreate config, File* f, SP_CONFIG_MSG* msg)
 {
-	return NULL;
+	return NULL; // TODO implement
 }
 
 char* spConfigGetImgDir(const spConfigCreate config, SP_CONFIG_MSG* msg)
@@ -103,7 +106,7 @@ bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	cfgGetHead(extractMode);
 }
-bool spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg)
+int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	cfgGetHead(knnNumImg);
 }

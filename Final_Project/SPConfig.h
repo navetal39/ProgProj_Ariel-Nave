@@ -116,7 +116,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg);
 
 void spConfigInitConfig(spConfig config, bool wersSet[]);
 
-SP_CONFIG_MSG spConfigGetLine(spConfigCreate config, File* f);
+int spConfigGetLine(spConfigCreate config, File* f, SP_CONFIG_MSG* msg);
 
 char* spConfigGetImgDir(const spConfigCreate config, SP_CONFIG_MSG* msg);
 
