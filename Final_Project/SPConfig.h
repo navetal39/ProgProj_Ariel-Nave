@@ -24,29 +24,52 @@ typedef enum sp_config_msg_t {
 	SP_CONFIG_SUCCESS
 } SP_CONFIG_MSG;
 
+typedef enum sp_config_field_type_y {
+	SP_CONFIG_TYPE_INT,
+	SP_CONFIG_TYPE_STR,
+	SP_CONFIG_TYPE_BOOl,
+	SP_CONFIG_TYPE_ENUM,
+	SP_CONFIG_TYPE_COMMENT
+} SP_CONFIG_TYPE;
+
 typedef struct sp_config_t* SPConfig;
 
-/* Constrants: */
+/* Constants: */
 #define VARS_COUNT 14
-#define MAX_LINE_SIZE 1024 // may be assumed according to the forum
-#define ERR_MSG_INVALID_LINE "File: %s\nLine: %s\nMessage: Invalid configuration line"
-#define ERR_MSG_INVALID_VAL "File: %s\nLine: %s\nMessage: Invalid value - constraint not met"
-#define ERR_MSG_INVALID_LINE "File: %s\nLine: %s\nMessage: Parameter %s is not set"
+#define MAX_LINE_SIZE 1025 // may be assumed according to the forum
+#define TRUE_STR "true"
+#define FALSE_STR "false"
+#define SPLIT_RAND "RANDOM"
+#define SPLIT_MAX "MAX_SPREAD"
+#define SPLIT_INC "INCREMENTAL"
+#define ERR_MSG_INVALID_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line"
+#define ERR_MSG_INVALID_VAL "File: %s\nLine: %d\nMessage: Invalid value - constraint not met"
+#define ERR_MSG_UNSET_PARAM "File: %s\nLine: %d\nMessage: Parameter %s is not set"
+#define ERR_MSG_OPEN_CFG_FILE "The %s configuration file %s couldn't be open"
+#define ERR_MSG_PART_DEFAULT "default "
+#define ERR_MSG_PART_NON_DEFAULT ""
+#define SPACE_CHAR ' '
+#define NEWLINE_CHAR '\n'
+#define SET_CHAR '-'
+#define COMMENT_CHAR '#'
+#define NULL_CHAR '\0'
+#define RET_COMMENT_LINE -2
+#define RET_ERR_CONSTRAINTS -3
 /* vars offsets: */
-#define OFFSET_imgDir 0
-#define OFFSET_imgPre 1
-#define OFFSET_imgSuf 2
-#define OFFSET_imgNum 3
-#define OFFSET_pcaDim 4
-#define OFFSET_pcaFile 5
-#define OFFSET_featureNum 6
-#define OFFSET_extractMode 7
-#define OFFSET_knnNumImg 8
-#define OFFSET_splitMethod 9
-#define OFFSET_knnNumFeatures 10
-#define OFFSET_useMinGUI 11
-#define OFFSET_logLvl 12
-#define OFFSET_logFile 13
+#define VARNUM_imgDir 0
+#define VARNUM_imgPre 1
+#define VARNUM_imgSuf 2
+#define VARNUM_imgNum 3
+#define VARNUM_pcaDim 4
+#define VARNUM_pcaFile 5
+#define VARNUM_featureNum 6
+#define VARNUM_extractMode 7
+#define VARNUM_knnNumImg 8
+#define VARNUM_splitMethod 9
+#define VARNUM_knnNumFeatures 10
+#define VARNUM_useMinGUI 11
+#define VARNUM_logLvl 12
+#define VARNUM_logFile 13
 #define VAR_AT_0 "imgDir"
 #define VAR_AT_1 "imgPre"
 #define VAR_AT_2 "imgSuf"
@@ -64,17 +87,21 @@ typedef struct sp_config_t* SPConfig;
 /* Default values: */
 #define DEFAULT_PCA_DIM 20
 #define DEFAULT_PCA_FILE "pca.yml"
+#define DEFAULT_CFG_FILE "spcbir.config"
 #define DEFAULT_FEATURES_NUM 100
 #define DEFAULT_EXT_MODE true
 #define DEFAULT_MIN_GUI false
 #define DEFAULT_SIM_IMG_NUM 1
 #define DEFAULT_KNN_FEATS 1
-#define DEFAULT_SPLIT_METHOD MAX_SPREAD
+#define DEFAULT_SPLIT_METHOD SP_KD_SPLIT_MAX_SPREAD
 #define DEFAULT_LOG_LEVEL 3
 #define DEFAULT_LOG_FILE "stdout"
 /* Macros: */
 #define VAR_AT(num) VAR_AT_num
-#define cfgGetHead(var) do{\
+#define FREE_IF_SET(var) if(set[VARNUM_var] == 1){free(config->var);}
+#define SKIP_SPACES(line) while(line[0] == SPACE_CHAR || line[0] == NEWLINE_CHAR) {line++;}
+#define SKIP_UNTIL_SPACES(line) while(line[1] != SPACE_CHAR) {line++};
+#define CFG_GET(var) do{\
 		if(config==NULL)\
 			{\
 				*msg=SP_CONFIG_INVALID_ARGUMENT;\
@@ -85,7 +112,7 @@ typedef struct sp_config_t* SPConfig;
 	}while(0);
 #define cfgSet(var, val) do{\
 		config->var = (val);
-		wereSet[OFFSET_var] = true;
+		set[VARNUM_var] = 2;
 	}while(0);
 
 /**
@@ -112,11 +139,19 @@ typedef struct sp_config_t* SPConfig;
  *
  *
  */
-SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg);
+SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg, int set[]);
 
-void spConfigInitConfig(spConfig config, bool wersSet[]);
+void spConfigInitConfig(spConfig config, int set[]);
 
 int spConfigGetLine(spConfigCreate config, File* f, SP_CONFIG_MSG* msg);
+
+int spConfigObtainAndSet(spConfigCreate config, char* line, SP_CONFIG_MSG* msg);
+
+int spConfigVarNum(char* name);
+
+SP_CONFIG_TYPE spConfigVarType(int num);
+
+int spConfigCheckAndSetValue(const SPConfig config, int varNum, char* valStr, SP_CONFIG_MSG* msg);
 
 char* spConfigGetImgDir(const spConfigCreate config, SP_CONFIG_MSG* msg);
 
@@ -248,6 +283,8 @@ SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
  *  - SP_CONFIG_SUCCESS - in case of success
  */
 SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config);
+
+void spConfigDestroyPartial(spConfig config, int set[]);
 
 /**
  * Frees all memory resources associate with config. 
