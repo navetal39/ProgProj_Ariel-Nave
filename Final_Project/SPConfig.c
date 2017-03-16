@@ -47,7 +47,6 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		return NULL;
 	}
 	FILE* f;
-	SP_CONFIG_MSG retMsg;
 	int wereSet[VARS_COUNT] = {0};
 	int lineNum = -1, unset
 	SP_CONFIG_LINE_STATUS lineRet;
@@ -69,15 +68,10 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	spConfigInitConfig(config, wereSet)
 	do
 	{
-		lineRet = spConfigProcessLine(config, f, &retMsg, wereSet);
+		lineRet = spConfigProcessLine(config, f, msg, wereSet);
 		lineNum++;
-	}while(retMsg != SP_CONFIG_SUCCESS && lineRet == SP_CONFIG_ST_SUCCESS);
-	if(lineRet == SP_CONFIG_ST_ERR)
-	{
-		// TODO handle error
-	}
-	*msg = retMsg;
-	if(retMsg != SP_CONFIG_SUCCESS_SUCCESS)
+	}while(*msg != SP_CONFIG_SUCCESS && lineRet == SP_CONFIG_ST_SUCCESS);
+	if(*msg != SP_CONFIG_SUCCESS_SUCCESS || lineRet == SP_CONFIG_ST_ERR)
 	{
 		printf(ERR_MSG_INVALID_LINE, filename, lineNum)
 		spConfigDestroyPartial(config, wereSet);
@@ -123,8 +117,10 @@ SP_CONFIG_LINE_STATUS spConfigProcessLine(spConfig config,
 		if(errno == 0)
 		{
 			ret = SP_CONFIG_ST_END;
+			*msg = SP_CONFIG_SUCCESS;
 		}else{
 			ret = SP_CONFIG_ST_ERR;
+			*msg = SP_CONFIG_INVALID_STRING;
 		}
 	}else{
 		*msg = spConfigSplitLine(lineBuff, &src, &dst);
