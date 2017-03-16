@@ -4,12 +4,14 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "aux.h"
+#include <string.h>
+#include <errno.h> // for errno
+#include "auxil.h"
 #include "SPLogger.h"
 #include "SPConfig.h"
 #include "SPKDTree.h"
 
-typedef struct sp_config_t{
+struct sp_config_t{
 	char* imgDir;
 	char* imgPre;
 	char* imgSuf;
@@ -26,6 +28,10 @@ typedef struct sp_config_t{
 	char* logFile
 };
 
+struct sp_str_chain{
+	char* value,
+	stringChain next
+};
 
 SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 {
@@ -43,8 +49,8 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	FILE* f;
 	SP_CONFIG_MSG retMsg;
 	int wereSet[VARS_COUNT] = {0};
-	int lineNum = -1, read;
-	int unset;
+	int lineNum = -1, unset
+	SP_CONFIG_LINE_STATUS lineRet;
 	char* cfgFileCtgr;
 	f = fopen(filename, "r");
 	if(f == NULL)
@@ -63,10 +69,10 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	spConfigInitConfig(config, wereSet)
 	do
 	{
-		read = spConfigGetLine(config, f, &retMsg, wereSet);
+		lineRet = spConfigProcessLine(config, f, &retMsg, wereSet);
 		lineNum++;
-	}while(retMsg != SP_CONFIG_SUCCESS && read != RET_ERR);
-	if(read == RET_ERR)
+	}while(retMsg != SP_CONFIG_SUCCESS && lineRet == SP_CONFIG_ST_SUCCESS);
+	if(lineRet == SP_CONFIG_ST_ERR)
 	{
 		// TODO handle error
 	}
@@ -78,9 +84,9 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		return NULL;
 	}
 	unset = spConfigGetUnset(wereSet);
-	if(!unset)
+	if(unset <= VARS_COUNT)
 	{
-		printf(ERR_MSG_UNSET_PARAM, filename, lineNum, VAR_AT(unset));
+		printf(ERR_MSG_UNSET_PARAM, filename, lineNum, spConfigVarName(unset));
 		spConfigDestroyPartial(config, wereSet);
 		*msg = spConfigGetMissingmessage(unset);
 		return NULL;
@@ -90,309 +96,268 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 
 void spConfigInitConfig(spConfig config, int set[])
 {
-	cfgSet(pcaDim, DEFAULT_PCA_DIM);
-	cfgSet(pcaFile, DEFAULT_PCA_FILE);
-	cfgSet(featureNum, DEFAULT_FEATURES_NUM);
-	cfgSet(extractMode, DEFAULT_EXT_MODE);
-	cfgSet(useMinGUI, DEFAULT_MIN_GUI);
-	cfgSet(knnNumImg, DEFAULT_SIM_IMG_NUM);
-	cfgSet(knnNumFeatures, DEFAULT_KNN_FEATS);
-	cfgSet(splitMethod, DEFAULT_SPLIT_METHOD);
-	cfgSet(logLvl, DEFAULT_LOG_LEVEL);
-	cfgSet(logFile, DEFAULT_LOG_FILE);
+	cfgSet(config->_pcaDim,			VARNUM_pcaDim,			DEFAULT_PCA_DIM);
+	cfgSet(config->_pcaFile,		VARNUM_pcaFile,			DEFAULT_PCA_FILE);
+	cfgSet(config->_featureNum,		VARNUM_featureNum,		DEFAULT_FEATURES_NUM);
+	cfgSet(config->_extractMode,	VARNUM_extractMode,		DEFAULT_EXT_MODE);
+	cfgSet(config->_useMinGUI,		VARNUM_useMinGUI,		DEFAULT_MIN_GUI);
+	cfgSet(config->_knnNumImg,		VARNUM_knnNumImg,		DEFAULT_SIM_IMG_NUM);
+	cfgSet(config->_knnNumFeatures, VARNUM_knnNumFeatures,	DEFAULT_KNN_FEATS);
+	cfgSet(config->_splitMethod,	VARNUM_splitMethod,		DEFAULT_SPLIT_METHOD);
+	cfgSet(config->_logLvl,			VARNUM_logLvl,			DEFAULT_LOG_LEVEL);
+	cfgSet(config->_logFile,		VARNUM_logFile, 		DEFAULT_LOG_FILE);
 }
-int spConfigGetLine(spConfigCreate config, File* f, SP_CONFIG_MSG* msg, int set[])
+
+SP_CONFIG_LINE_STATUS spConfigProcessLine(spConfig config,
+				File* f, SP_CONFIG_MSG* msg, int set[])
 {
-	int size = MAX_LINE_SIZE, read, obtained;
-	char[] lineBuff[size];
+	int size = MAX_LINE_SIZE, read, varNum;
+	char* lineBuff = (char*)malloc((size+1)*sizeof(char));
+	char *src, *dst;
+	struct sp_str_chain* lineChain;
+	SP_CONFIG_LINE_STATUS ret;
 	memset(lineBuff, NULL_CHAR, size)
 	read = getline(&linebuff, &size, f);
-	if(read > 0)
+	if(read<0)
 	{
-		obtained = spConfigObtainAndSet(config, lineBuff, msg);
-		if(obtained >= 0 && obtained < VARS_COUNT)
+		if(errno == 0)
 		{
-			set[obtained] = 1;
+			ret = SP_CONFIG_ST_END;
+		}else{
+			ret = SP_CONFIG_ST_ERR;
 		}
 	}else{
-		obtained = RET_ERR;
+		*msg = spConfigSplitLine(lineBuff, &src, &dst);
+		if(*msg == NULL)
+		{
+			if(VAR_IS_INT(src))
+			{
+				*msg = SP_CONFIG_INVALID_INTEGER;
+			}else{
+				*msg = SP_CONFIG_INVALID_STRING;
+			}
+		}
+		if(*msg != SP_CONFIG_SUCCESS)
+		{
+			ret = SP_CONFIG_ST_ERR;
+		}else{
+			varNum = spConfigVarNum(src);
+			ret = spConfigAssertAndSet(config, varNum, dst, msg);
+		}
 	}
-	return obtained;
+	free(lineBuff);
+	return ret;
 }
 
-int spConfigObtainAndSet(spConfigCreate config, char* line, SP_CONFIG_MSG* msg)
+SP_CONFIG_MSG spConfigSplitLine(char* line, char** src, char** dst)
 {
-	char *var, *val;
-	int varNum;
-	SP_CONFIG_TYPE varType;
-	SKIP_SPACES(line);
-	if(line[0] == COMMENT_CHAR)
+	char *srcEnd, *dstEnd;
+	SKIP_WHITESPACES(line);
+	if(line[0] == SET_CHAR || line[0] == NULL_CHAR)
 	{
-		return RET_COMMENT_LINE;
+		return SP_CONFIG_INVALID_STRING;
 	}
-	var = line;
-	SKIP_UNTIL_SPACES(line);
-	if(line[0] == SET_CHAR)
+	*src = line;
+	SKIP_TO_SPECIAL(line);
+	srcEnd = line;
+	SKIP_WHITESPACES(line);
+	if(line[0] != SET_CHAR)
 	{
-		line[0] = NULL_CHAR;
-		line++;
-	}else{
-		line[1] = NULL_CHAR;
-		line += 2;
-		SKIP_SPACES(line);
-		if(line[0] != SET_CHAR)
-		{
-			*msg = SP_CONFIG_INVALID_STRING; // TODO check forum to see if ok
-			return RET_ERR;
-		}
-		line++;
+		return SP_CONFIG_INVALID_STRING;
 	}
-	varNum = spConfigVarNum(var);
-	varType = spConfigVarType(varNum);
-	if(varType == NULL)
+	line++;
+	SKIP_WHITESPACES(line);
+	if(line[0] == NULL_CHAR || line[0] == SET_CHAR)
 	{
-		*msg = SP_CONFIG_INVALID_STRING;
-		return RET_ERR;
+		return NULL;
 	}
-	SKIP_SPACES(line);
-	val = line;
-	SKIP_UNTIL_SPACES(line);
-	line[1] = NULL_CHAR;
-	line += 2;
-	SKIP_SPACES(line);
+	*dst = line;
+	SKIP_TO_SPECIAL(line);
+	dstEnd = line;
+	SKIP_WHITESPACES(line);
 	if(line[0] != NULL_CHAR)
 	{
-		if(varType == SP_CONFIG_TYPE_INT)
-		{
-			*msg = SP_CONFIG_INVALID_INTEGER;
-		}else{
-			*msg = SP_CONFIG_INVALID_STRING;
-		}
-		return RET_ERR;
+		return NULL;
 	}
-	return spConfigCheckAndSetValue(config, varNum, val, msg);
+	*srcEnd = NULL_CHAR;
+	*dstEnd = NULL_CHAR;
+	return SP_CONFIG_SUCCESS;
 }
 
-int spConfigVarNum(char* name)
+int spConfigVarNum(char* varName)
 {
-	return NULL // TODO lots of strcmprs
+	CHECK_VAR_NUM(varName,	VARNAME_imgDir,			VARNUM_imgDir);
+	CHECK_VAR_NUM(varName,	VARNAME_imgPre,			VARNUM_imgPre);
+	CHECK_VAR_NUM(varName,	VARNAME_imgSuf,			VARNUM_imgSuf);
+	CHECK_VAR_NUM(varName,	VARNAME_imgNum,			VARNUM_imgNum);
+	CHECK_VAR_NUM(varName,	VARNAME_pcaDim,			VARNUM_pcaDim);
+	CHECK_VAR_NUM(varName,	VARNAME_pcaFile,		VARNUM_pcaFile);
+	CHECK_VAR_NUM(varName,	VARNAME_featureNum,		VARNUM_featureNum);
+	CHECK_VAR_NUM(varName,	VARNAME_extractMode,	VARNUM_extractMode);
+	CHECK_VAR_NUM(varName,	VARNAME_knnNumImg,		VARNUM_knnNumImg);
+	CHECK_VAR_NUM(varName,	VARNAME_splitMethod,	VARNUM_splitMethod);
+	CHECK_VAR_NUM(varName,	VARNAME_knnNumFeatures,	VARNUM_knnNumFeatures);
+	CHECK_VAR_NUM(varName,	VARNAME_useMinGUI,		VARNUM_useMinGUI);
+	CHECK_VAR_NUM(varName,	VARNAME_logLvl,			VARNUM_logLvl);
+	CHECK_VAR_NUM(varName,	VARNAME_logFile,		VARNUM_logFile);
 }
-
-SP_CONFIG_TYPE spConfigVarType(int num)
+char* spConfigVarName(int varNum)
 {
-	if(varNum == VARNUM_imgNum || varNum == VARNUM_pcaDim || 
-		varNum == VARNUM_featureNum || varNum == VARNUM_knnNumImg || 
-		varNum = VARNUM_knnNumFeatures || varNum == VARNUM_logLvl)
-	{
-		return SP_CONFIG_TYPE_INT;
-	}
-	if(varNum == VARNUM_imgDir || varNum == imgPre || varNum == imgSuf || 
-		varNum == VARNUM_pcaFile || varNum == VARNUM_logFile)
-	{
-		return SP_CONFIG_TYPE_STR;
-	}
-	if(varNum == VARNUM_useMinGUI || varNum == VARNUM_extractMode)
-	{
-		return SP_CONFIG_TYPE_BOOL;
-	}
-	if(varNum == VARNUM_splitMethod)
-	{
-		return SP_CONFIG_TYPE_ENUM;
-	}
-	return NULL;
-}
-
-int spConfigCheckAndSetValue(const SPConfig config, int varNum, char* valStr, SP_CONFIG_MSG* msg)
-{
-	// TODO make shorter
-	char* pBuff;
-	int pVal, vType;
-	bool metconstraints = false;
-	if(spConfigVarType(varNum) == SP_CONFIG_TYPE_INT)
-	{
-		pVal = atoi(varNum);
-	}else{
-		pBuff = (char*)malloc(strlen(valStr)*sizeof(char));
-		strcpy(pBuff, valStr);
-		break;
-	}
 	switch(varNum)
 	{
+		case VARNUM_imgDir:			return VARNAME_imgDir;
+		case VARNUM_imgPre:			return VARNAME_imgPre;
+		case VARNUM_imgSuf:			return VARNAME_imgSuf;
+		case VARNUM_imgNum:			return VARNAME_imgNum;
+		case VARNUM_pcaDim:			return VARNAME_pcaDim;
+		case VARNUM_pcaFile:		return VARNAME_pcaFile;
+		case VARNUM_featureNum:		return VARNAME_featureNum;
+		case VARNUM_extractMode:	return VARNAME_extractMode;
+		case VARNUM_knnNumImg:		return VARNAME_knnNumImg;
+		case VARNUM_splitMethod:	return VARNAME_splitMethod;
+		case VARNUM_knnNumFeatures:	return VARNAME_knnNumFeatures;
+		case VARNUM_useMinGUI:		return VARNAME_useMinGUI;
+		case VARNUM_logLvl:			return VARNAME_logLvl;
+		case VARNUM_logFile:		return VARNAME_logFile;
+	}
+	return NULL;
+
+}
+
+SP_CONFIG_LINE_STATUS spConfigAssertAndSet(spConfig config,
+				int varNum, char* valStr, SP_CONFIG_MSG* msg)
+{
+	int len = strlen(valStr), pVal = -1, i;
+	char* pBuff = (char*)malloc((len+1)*sizeof(char));
+	bool isNum = True;
+	SP_CONFIG_LINE_STATUS ret = SP_CONFIG_ST_SUCCESS;
+	strcpy(pBuff, valStr);
+	if(isNum(pBuff)){ pVal = atoi(pBuff); }
+	switch(varNum){
 		case VARNUM_imgDir:
-			config->imgDir = pBuff;
-			metconstraints = true;
+			spConfig->imgDir = pBuff;
 			break;
 		case VARNUM_imgPre:
-			config->imgPre = pBuff;
-			metconstraints = true;
+			spConfig->imgPre = pBuff;
 			break;
 		case VARNUM_imgSuf:
-			config->imgSuf = pBuff;
-			metconstraints = true;
+			if(IS_GOOD_SUFFIX(pBuff))
+			{
+				spConfig->imgSuf = pBuff;
+			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_STRING; }
 			break;
 		case VARNUM_imgNum:
-			if(pval > 0)
-			{
-				metconstraints = true;
-				config->imgNum = pval;
-			}
+			if(pVal>0) {
+				spConfig->imgNum = pVal;
+			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_pcaDim:
-			if(pval >= 10 && pval <= 28) 
-			{
-				metconstraints = true;
-				config->imgNum = pval;
-			}
+			if(pVal>=10 && pVal <= 28) {
+				spConfig->pcaDim = pVal;
+			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_pcaFile:
-			config->imgSuf = pBuff;
-			metconstraints = true;
+			spConfig->pcaFile = pBuff;
 			break;
 		case VARNUM_featureNum:
-			if(pval > 0)
-			{
-				config->featureNum = pval;
-			}
+			if(pVal>0) {
+				spConfig->featureNum = pVal;
+			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_extractMode:
-			if(!strcmp(pBuff, TRUE_STR))
-			{
-				config->extractMode = true;
-				metconstraints = true;
-			}
-			if(!strcmp(pBuff, FALSE_STR))
-			{
-				config->extractMode = false;
-				metconstraints = true;
-			}
-			free(pBuff);
+			if(IS_BOOL(pBuff)) {
+				spConfig->extractMode = (strcmp(pBuff, TRUE_STR))?false:true;
+			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_STRING; }
 			break;
 		case VARNUM_knnNumImg:
-			if(pval > 0)
-			{
-				config->knnNumImg = pval;
-				metconstraints = true;
-			}
+			if(pVal>0) {
+				spConfig->knnNumImg = pVal;
+			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_splitMethod:
-			if(!strcmp(pBuff, SP_KD_SPLIT_SPLIT_RAND))
-			{
-				config->splitMethod = RANDOM;
-				metconstraints = true;
-			}
-			if(!strcmp(pBuff, SP_KD_SPLIT_SPLIT_MAX))
-			{
-				config->splitMethod = MAX_SPREAD;
-				metconstraints = true;
-			}
-			if(!strcmp(pBuff, SP_KD_SPLIT_SPLIT_INC))
-			{
-				config->splitMethod = INCREMENTAL;
-				metconstraints = true;
-			}
-			free(pBuff);
+			if(IS_GOOD_SPLIT(pBuff)) {
+				if(strcmp(pBuff, SPLIT_INC)) { spConfig->splitMethod = SP_KD_SPLIT_INCREMENTAL; }
+				if(strcmp(pBuff, SPLIT_MAX)) { spConfig->splitMethod = SP_KD_SPLIT_MAX_SPREAD; }
+				if(strcmp(pBuff, SPLIT_RAND)){ spConfig->splitMethod = SP_KD_SPLIT_RANDOM; }
+			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_STRING; }
 			break;
 		case VARNUM_knnNumFeatures:
-			if(pval > 0)
-			{
-				config->knnNumFeatures = pval;
-				metconstraints = true;
-			}
+			if(pVal>0) {
+				spConfig->knnNumFeatures = pVal;
+			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_useMinGUI:
-			if(!strcmp(pBuff, TRUE_STR))
-			{
-				config->useMinGUI = true;
-				metconstraints = true;
-			}
-			if(!strcmp(pBuff, FALSE_STR))
-			{
-				config->useMinGUI = false;
-				metconstraints = true;
-			}
-			free(pBuff);
+			if(IS_BOOL(pBuff)) {
+				spConfig->useMinGUI = (strcmp(pBuff, TRUE_STR))?false:true;
+			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_STRING; }
 			break;
 		case VARNUM_logLvl:
-			if(pval > 0 && pval < 3)
-			{
-				config->logLvl = pval;
-				metconstraints = true;
-			}
+			if(pVal>=1 && pVal <= 4) {
+				spConfig->logLvl = pVal;
+			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_logFile:
-			config->imgSuf = pBuff;
-			metconstraints = true;
-			break;
-		default:
+			spConfig->logFile = pBuff;
 			break;
 	}
-	if(metconstraints)
-	{
-		*msg = SP_CONFIG_SUCCESS;
-		return varNum;
-	}else{
-		*msg = SP_CONFIG_INVALID_INTEGER;
-		return RET_ERR_CONSTRAINTS;
-	}
+	return ret;
 }
 
 char* spConfigGetImgDir(const spConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(imgDir);
+	CFG_GET(config->imgDir);
 }
-
 char* spConfigGetImgPrefix(const spConfigCreate config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(imgPre);
+	CFG_GET(config->imgPre);
 }
-
 char* spConfigGetImgSuffix(const spConfigCreate config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(imgSuf);
+	CFG_GET(config->imgSuf);
 }
 int spConfigGetNumOfImages(const SPConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(imgNum);
+	CFG_GET(config->imgNum);
 }
 int spConfigGetPCADim(const SPConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(pcaDim);
+	CFG_GET(config->pcaDim);
 }
 char* spConfigGetPCAFile(const spConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(pcaFile);
+	CFG_GET(config->pcaFile);
 }
 int spConfigGetNumOfFeatures(const SPConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(featureNum);
+	CFG_GET(config->featureNum);
 }
 bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(extractMode);
+	CFG_GET(config->extractMode);
 }
 int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(knnNumImg);
+	CFG_GET(config->knnNumImg);
 }
 SP_KDT_SPLIT spConfgGetSplitMethod(const spConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(splitMethod);
+	CFG_GET(config->splitMethod);
 }
 bool spConfigGetNumOfSimilarFeatures(const SPConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(knnNumFeatures);
+	CFG_GET(config->knnNumFeatures);
 }
 bool spConfigMinimalGui(const SPConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(useMinGUI);
+	CFG_GET(config->useMinGUI);
 }
 int spConfigGetLogLevel(const SPConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(logLvl);
+	CFG_GET(config->logLvl);
 }
 char* spConfigGetLogLevel(const SPConfig config, SP_CONFIG_MSG* msg)
 {
-	CFG_GET(logFile);
+	CFG_GET(config->logFile);
 }
 
 SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
@@ -457,15 +422,25 @@ SP_CONFIG_MSG spConfigGetMissingmessage(int offset)
 	}
 }
 
+int spConfigGetUnset(int wereSet)
+{
+	int i = 0;
+	while(wereSet[i] != 0)
+	{
+		i++;
+	}
+	return i;
+}
+
 void spConfigDestroyPartial(spConfig config, int set[])
 {
 	if(config != NULL)
 	{
-		FREE_IF_SET(imgDir);
-		FREE_IF_SET(imgPre);
-		FREE_IF_SET(imgSuf);
-		FREE_IF_SET(pcaFile);
-		FREE_IF_SET(logFile);
+		FREE_IF_SET(config->imgDir, VARNUM_imgDir);
+		FREE_IF_SET(config->imgPre, VARNUM_imgPre);
+		FREE_IF_SET(config->imgSuf, VARNUM_imgSuf);
+		FREE_IF_SET(config->pcaFile, VARNUM_pcaFile);
+		FREE_IF_SET(config->logFile, VARNUM_logFile);
 		free(config);
 	}
 }

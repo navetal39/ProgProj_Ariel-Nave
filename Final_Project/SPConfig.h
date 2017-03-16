@@ -24,38 +24,42 @@ typedef enum sp_config_msg_t {
 	SP_CONFIG_SUCCESS
 } SP_CONFIG_MSG;
 
-typedef enum sp_config_field_type_y {
-	SP_CONFIG_TYPE_INT,
-	SP_CONFIG_TYPE_STR,
-	SP_CONFIG_TYPE_BOOl,
-	SP_CONFIG_TYPE_ENUM,
-	SP_CONFIG_TYPE_COMMENT
-} SP_CONFIG_TYPE;
+typedef enum sp_config_line_status_t {
+	SP_CONFIG_ST_SUCCESS,
+	SP_CONFIG_ST_ERR,
+	SP_CONFIG_ST_END
+} SP_CONFIG_LINE_STATUS;
 
 typedef struct sp_config_t* SPConfig;
 
 /* Constants: */
 #define VARS_COUNT 14
-#define MAX_LINE_SIZE 1025 // may be assumed according to the forum
+#define MAX_LINE_SIZE 1024 // may be assumed according to the forum
 #define TRUE_STR "true"
 #define FALSE_STR "false"
+/* Split method names: */
 #define SPLIT_RAND "RANDOM"
 #define SPLIT_MAX "MAX_SPREAD"
 #define SPLIT_INC "INCREMENTAL"
+/* Allowed suffixes: */
+#define SUFFIX_JPG ".jpg"
+#define SUFFIX_PNG ".png"
+#define SUFFIX_BMP ".bmp"
+#define SUFFIX_GIF ".gif"
+/* Error messagesL */
 #define ERR_MSG_INVALID_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line"
 #define ERR_MSG_INVALID_VAL "File: %s\nLine: %d\nMessage: Invalid value - constraint not met"
 #define ERR_MSG_UNSET_PARAM "File: %s\nLine: %d\nMessage: Parameter %s is not set"
 #define ERR_MSG_OPEN_CFG_FILE "The %s configuration file %s couldn't be open"
 #define ERR_MSG_PART_DEFAULT "default "
 #define ERR_MSG_PART_NON_DEFAULT ""
+/* Special characters: */
 #define SPACE_CHAR ' '
 #define NEWLINE_CHAR '\n'
-#define SET_CHAR '-'
+#define SET_CHAR '='
 #define COMMENT_CHAR '#'
 #define NULL_CHAR '\0'
-#define RET_COMMENT_LINE -2
-#define RET_ERR_CONSTRAINTS -3
-/* vars offsets: */
+/* vars nums and names: */
 #define VARNUM_imgDir 0
 #define VARNUM_imgPre 1
 #define VARNUM_imgSuf 2
@@ -70,20 +74,20 @@ typedef struct sp_config_t* SPConfig;
 #define VARNUM_useMinGUI 11
 #define VARNUM_logLvl 12
 #define VARNUM_logFile 13
-#define VAR_AT_0 "imgDir"
-#define VAR_AT_1 "imgPre"
-#define VAR_AT_2 "imgSuf"
-#define VAR_AT_3 "imgNum"
-#define VAR_AT_4 "pcaDim"
-#define VAR_AT_5 "pcaFile"
-#define VAR_AT_6 "featureNum"
-#define VAR_AT_7 "extractMode"
-#define VAR_AT_8 "knnNumImg"
-#define VAR_AT_9 "splitMethod"
-#define VAR_AT_10 "knnNumFeatures"
-#define VAR_AT_11 "useMinGUI"
-#define VAR_AT_12 "logLvl"
-#define VAR_AT_13 "logFile"
+#define VARNAME_imgDir "spImagesDirectory"
+#define VARNAME_imgPre "spImagesPrefix"
+#define VARNAME_imgSuf "spImagesSuffix"
+#define VARNAME_imgNum "spNumOfImages"
+#define VARNAME_pcaDim "spPCADimension"
+#define VARNAME_pcaFile "spPCAFilename"
+#define VARNAME_featureNum "spNumOfFeatures"
+#define VARNAME_extractMode "spExtractionMode"
+#define VARNAME_knnNumImg "spNumOfSimilarImages"
+#define VARNAME_splitMethod "spKDTreeSplitMethod"
+#define VARNAME_knnNumFeatures "spKNN"
+#define VARNAME_useMinGUI "spMinimalGUI"
+#define VARNAME_logLvl "spLoggerLevel"
+#define VARNAME_logFile "spLoggerFilename"
 /* Default values: */
 #define DEFAULT_PCA_DIM 20
 #define DEFAULT_PCA_FILE "pca.yml"
@@ -97,10 +101,7 @@ typedef struct sp_config_t* SPConfig;
 #define DEFAULT_LOG_LEVEL 3
 #define DEFAULT_LOG_FILE "stdout"
 /* Macros: */
-#define VAR_AT(num) VAR_AT_num
-#define FREE_IF_SET(var) if(set[VARNUM_var] == 1){free(config->var);}
-#define SKIP_SPACES(line) while(line[0] == SPACE_CHAR || line[0] == NEWLINE_CHAR) {line++;}
-#define SKIP_UNTIL_SPACES(line) while(line[1] != SPACE_CHAR) {line++};
+#define FREE_IF_SET(var, loc) if(set[(loc)] == 1){free(var);}
 #define CFG_GET(var) do{\
 		if(config==NULL)\
 			{\
@@ -108,13 +109,40 @@ typedef struct sp_config_t* SPConfig;
 				return NULL;\
 			}\
 		*msg = SP_CONFIG_SUCCESS;\
-		return config->var;\
+		return (var);\
 	}while(0);
-#define cfgSet(var, val) do{\
-		config->var = (val);
-		set[VARNUM_var] = 2;
+#define cfgSet(var, varLoc, val) do{\
+		(var) = (val);
+		set[(varLoc)] = 2;
 	}while(0);
-
+#define SKIP_WHITESPACES(ptr) do{\
+		while((ptr)[0] == SPACE_CHAR || (ptr)[0] == NEWLINE_CHAR) {\
+			(ptr)++;\
+		}\
+	}while(0);
+#define SKIP_TO_SPECIAL(ptr) do{\
+		while((ptr)[0] != SPACE_CHAR && (ptr)[0] != NEWLINE_CHAR &&\
+			(ptr)[0] != NULL_CHAR && (ptr)[0] != SET_CHAR) {\
+			(ptr)++;\
+		}\
+	}while(0);
+#define VAR_IS_INT(name) (!(strcmp((name), VARNAME_imgNum)*\
+							strcmp((name), VARNAME_pcaDim)*\
+							strcmp((name), VARNAME_featureNum)*\
+							strcmp((name), VARNAME_knnNumImg)*\
+							strcmp((name), VARNAME_knnNumFeatures)*\
+							strcmp((name), VARNAME_logLvl)))
+#define IS_GOOD_SUFFIX(buf) (!(strcmp((buf), SUFFIX_BMP)*\
+							strcmp((buf), SUFFIX_JPG)*\
+							strcmp((buf), SUFFIX_PNG)*\
+							strcmp((buf), SUFFIX_GIF)))
+#define IS_BOOL(buf) (!(strcmp((buf), TRUE_STR)*\
+							strcmp((buf), FALSE_STR)))
+#define IS_GOOD_SPLIT(buf)(!(strcmp((buf), SPLIT_INC)*\
+							strcmp((buf), SPLIT_MAX)*\
+							strcmp((buf), SPLIT_RAND)))
+#define ELSE_SET_INV_INT 
+#define CHECK_VAR_NUM(name, comp, num) if(!strcmp((name), (comp))){return (num);}
 /**
  * Creates a new system configuration struct. The configuration struct
  * is initialized based on the configuration file given by 'filename'.
@@ -143,15 +171,17 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg, int set[]);
 
 void spConfigInitConfig(spConfig config, int set[]);
 
-int spConfigGetLine(spConfigCreate config, File* f, SP_CONFIG_MSG* msg);
+SP_CONFIG_LINE_STATUS spConfigProcessLine(spConfigCreate config,
+				File* f, SP_CONFIG_MSG* msg);
 
-int spConfigObtainAndSet(spConfigCreate config, char* line, SP_CONFIG_MSG* msg);
+SP_CONFIG_MSG spConfigSplitLine(char* line, char* src, char* dst);
 
-int spConfigVarNum(char* name);
+int spConfigVarNum(char* varName);
 
-SP_CONFIG_TYPE spConfigVarType(int num);
+char* spConfigVarName(int varNum);
 
-int spConfigCheckAndSetValue(const SPConfig config, int varNum, char* valStr, SP_CONFIG_MSG* msg);
+SP_CONFIG_LINE_STATUS spConfigAssertAndSet(spConfig config,
+				int varNum, char* valStr, SP_CONFIG_MSG* msg);
 
 char* spConfigGetImgDir(const spConfigCreate config, SP_CONFIG_MSG* msg);
 
@@ -283,6 +313,8 @@ SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
  *  - SP_CONFIG_SUCCESS - in case of success
  */
 SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config);
+
+int spConfigGetUnset(int wereSet);
 
 void spConfigDestroyPartial(spConfig config, int set[]);
 
