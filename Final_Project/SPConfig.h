@@ -34,7 +34,7 @@ typedef struct sp_config_t* SPConfig;
 
 /* Constants: */
 #define VARS_COUNT 14
-#define MAX_LINE_SIZE 1024 // may be assumed according to the forum
+#define MAX_LINE_SIZE 1024 /* may be assumed according to the forum */
 #define TRUE_STR "true"
 #define FALSE_STR "false"
 /* Split method names: */
@@ -169,9 +169,9 @@ typedef struct sp_config_t* SPConfig;
  */
 SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg, int set[]);
 
-void spConfigInitConfig(spConfig config, int set[]);
+void spConfigInitConfig(SPConfig config, int set[]);
 
-SP_CONFIG_LINE_STATUS spConfigProcessLine(spConfigCreate config,
+SP_CONFIG_LINE_STATUS spConfigProcessLine(SPConfig config,
 				File* f, SP_CONFIG_MSG* msg);
 
 SP_CONFIG_MSG spConfigSplitLine(char* line, char* src, char* dst);
@@ -180,14 +180,14 @@ int spConfigVarNum(char* varName);
 
 char* spConfigVarName(int varNum);
 
-SP_CONFIG_LINE_STATUS spConfigAssertAndSet(spConfig config,
+SP_CONFIG_LINE_STATUS spConfigAssertAndSet(SPConfig config,
 				int varNum, char* valStr, SP_CONFIG_MSG* msg);
 
-char* spConfigGetImgDir(const spConfigCreate config, SP_CONFIG_MSG* msg);
+char* spConfigGetImgDir(const SPConfig config, SP_CONFIG_MSG* msg);
 
-char* spConfigGetImgPrefix(const spConfigCreate config, SP_CONFIG_MSG* msg);
+char* spConfigGetImgPrefix(const SPConfig config, SP_CONFIG_MSG* msg);
 
-char* spConfigGetImgSuffix(const spConfigCreate config, SP_CONFIG_MSG* msg);
+char* spConfigGetImgSuffix(const SPConfig config, SP_CONFIG_MSG* msg);
 
 /*
  * Returns the number of images set in the configuration file, i.e the value
@@ -216,7 +216,7 @@ int spConfigGetNumOfImages(const SPConfig config, SP_CONFIG_MSG* msg);
  */
 int spConfigGetPCADim(const SPConfig config, SP_CONFIG_MSG* msg);
 
-char* spConfigGetPCAFile(const spConfig config, SP_CONFIG_MSG* msg);
+char* spConfigGetPCAFile(const SPConfig config, SP_CONFIG_MSG* msg);
 
 /*
  * Returns the number of features to be extracted. i.e the value
@@ -247,7 +247,7 @@ bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg);
 
 int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg);
 
-SP_KDT_SPLIT spConfgGetSplitMethod(const spConfig config, SP_CONFIG_MSG* msg);
+SP_KDT_SPLIT spConfgGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg);
 
 bool spConfigGetNumOfSimilarFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
 
@@ -316,7 +316,7 @@ SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config);
 
 int spConfigGetUnset(int wereSet);
 
-void spConfigDestroyPartial(spConfig config, int set[]);
+void spConfigDestroyPartial(SPConfig config, int set[]);
 
 /**
  * Frees all memory resources associate with config. 

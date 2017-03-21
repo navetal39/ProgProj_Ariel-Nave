@@ -5,10 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h> // for errno
+#include <errno.h> /* for errno */
 #include "auxil.h"
-#include "SPLogger.h"
 #include "SPConfig.h"
+#include "SPLogger.h"
 #include "SPKDTree.h"
 
 struct sp_config_t{
@@ -25,12 +25,7 @@ struct sp_config_t{
 	int knnNumFeatures;
 	bool useMinGUI;
 	int logLvl;
-	char* logFile
-};
-
-struct sp_str_chain{
-	char* value,
-	stringChain next
+	char* logFile;
 };
 
 SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
@@ -40,7 +35,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		*msg = SP_CONFIG_INVALID_ARGUMENT;
 		return NULL;
 	}
-	spConfig config = (spConfig)malloc(sizeof(sp_config_t));
+	SPConfig config = (SPConfig)malloc(sizeof(sp_config_t));
 	if(config == NULL)
 	{
 		*msg = SP_CONFIG_ALLOC_FAIL;
@@ -88,21 +83,21 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	return config;
 }
 
-void spConfigInitConfig(spConfig config, int set[])
+void spConfigInitConfig(SPConfig config, int set[])
 {
-	cfgSet(config->_pcaDim,			VARNUM_pcaDim,			DEFAULT_PCA_DIM);
-	cfgSet(config->_pcaFile,		VARNUM_pcaFile,			DEFAULT_PCA_FILE);
-	cfgSet(config->_featureNum,		VARNUM_featureNum,		DEFAULT_FEATURES_NUM);
-	cfgSet(config->_extractMode,	VARNUM_extractMode,		DEFAULT_EXT_MODE);
-	cfgSet(config->_useMinGUI,		VARNUM_useMinGUI,		DEFAULT_MIN_GUI);
-	cfgSet(config->_knnNumImg,		VARNUM_knnNumImg,		DEFAULT_SIM_IMG_NUM);
-	cfgSet(config->_knnNumFeatures, VARNUM_knnNumFeatures,	DEFAULT_KNN_FEATS);
-	cfgSet(config->_splitMethod,	VARNUM_splitMethod,		DEFAULT_SPLIT_METHOD);
-	cfgSet(config->_logLvl,			VARNUM_logLvl,			DEFAULT_LOG_LEVEL);
-	cfgSet(config->_logFile,		VARNUM_logFile, 		DEFAULT_LOG_FILE);
+	cfgSet(config->pcaDim,			VARNUM_pcaDim,			DEFAULT_PCA_DIM);
+	cfgSet(config->pcaFile,			VARNUM_pcaFile,			DEFAULT_PCA_FILE);
+	cfgSet(config->featureNum,		VARNUM_featureNum,		DEFAULT_FEATURES_NUM);
+	cfgSet(config->extractMode,		VARNUM_extractMode,		DEFAULT_EXT_MODE);
+	cfgSet(config->useMinGUI,		VARNUM_useMinGUI,		DEFAULT_MIN_GUI);
+	cfgSet(config->knnNumImg,		VARNUM_knnNumImg,		DEFAULT_SIM_IMG_NUM);
+	cfgSet(config->knnNumFeatures,	VARNUM_knnNumFeatures,	DEFAULT_KNN_FEATS);
+	cfgSet(config->splitMethod,		VARNUM_splitMethod,		DEFAULT_SPLIT_METHOD);
+	cfgSet(config->logLvl,			VARNUM_logLvl,			DEFAULT_LOG_LEVEL);
+	cfgSet(config->logFile,			VARNUM_logFile, 		DEFAULT_LOG_FILE);
 }
 
-SP_CONFIG_LINE_STATUS spConfigProcessLine(spConfig config,
+SP_CONFIG_LINE_STATUS spConfigProcessLine(SPConfig config,
 				File* f, SP_CONFIG_MSG* msg, int set[])
 {
 	int size = MAX_LINE_SIZE, read, varNum;
@@ -220,7 +215,7 @@ char* spConfigVarName(int varNum)
 
 }
 
-SP_CONFIG_LINE_STATUS spConfigAssertAndSet(spConfig config,
+SP_CONFIG_LINE_STATUS spConfigAssertAndSet(SPConfig config,
 				int varNum, char* valStr, SP_CONFIG_MSG* msg)
 {
 	int len = strlen(valStr), pVal = -1, i;
@@ -231,83 +226,83 @@ SP_CONFIG_LINE_STATUS spConfigAssertAndSet(spConfig config,
 	if(isNum(pBuff)){ pVal = atoi(pBuff); }
 	switch(varNum){
 		case VARNUM_imgDir:
-			spConfig->imgDir = pBuff;
+			config->imgDir = pBuff;
 			break;
 		case VARNUM_imgPre:
-			spConfig->imgPre = pBuff;
+			config->imgPre = pBuff;
 			break;
 		case VARNUM_imgSuf:
 			if(IS_GOOD_SUFFIX(pBuff))
 			{
-				spConfig->imgSuf = pBuff;
+				config->imgSuf = pBuff;
 			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_STRING; }
 			break;
 		case VARNUM_imgNum:
 			if(pVal>0) {
-				spConfig->imgNum = pVal;
+				config->imgNum = pVal;
 			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_pcaDim:
 			if(pVal>=10 && pVal <= 28) {
-				spConfig->pcaDim = pVal;
+				config->pcaDim = pVal;
 			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_pcaFile:
-			spConfig->pcaFile = pBuff;
+			config->pcaFile = pBuff;
 			break;
 		case VARNUM_featureNum:
 			if(pVal>0) {
-				spConfig->featureNum = pVal;
+				config->featureNum = pVal;
 			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_extractMode:
 			if(IS_BOOL(pBuff)) {
-				spConfig->extractMode = (strcmp(pBuff, TRUE_STR))?false:true;
+				config->extractMode = (strcmp(pBuff, TRUE_STR))?false:true;
 			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_STRING; }
 			break;
 		case VARNUM_knnNumImg:
 			if(pVal>0) {
-				spConfig->knnNumImg = pVal;
+				config->knnNumImg = pVal;
 			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_splitMethod:
 			if(IS_GOOD_SPLIT(pBuff)) {
-				if(strcmp(pBuff, SPLIT_INC)) { spConfig->splitMethod = SP_KD_SPLIT_INCREMENTAL; }
-				if(strcmp(pBuff, SPLIT_MAX)) { spConfig->splitMethod = SP_KD_SPLIT_MAX_SPREAD; }
-				if(strcmp(pBuff, SPLIT_RAND)){ spConfig->splitMethod = SP_KD_SPLIT_RANDOM; }
+				if(strcmp(pBuff, SPLIT_INC)) { config->splitMethod = SP_KD_SPLIT_INCREMENTAL; }
+				if(strcmp(pBuff, SPLIT_MAX)) { config->splitMethod = SP_KD_SPLIT_MAX_SPREAD; }
+				if(strcmp(pBuff, SPLIT_RAND)){ config->splitMethod = SP_KD_SPLIT_RANDOM; }
 			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_STRING; }
 			break;
 		case VARNUM_knnNumFeatures:
 			if(pVal>0) {
-				spConfig->knnNumFeatures = pVal;
+				config->knnNumFeatures = pVal;
 			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_useMinGUI:
 			if(IS_BOOL(pBuff)) {
-				spConfig->useMinGUI = (strcmp(pBuff, TRUE_STR))?false:true;
+				config->useMinGUI = (strcmp(pBuff, TRUE_STR))?false:true;
 			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_STRING; }
 			break;
 		case VARNUM_logLvl:
 			if(pVal>=1 && pVal <= 4) {
-				spConfig->logLvl = pVal;
+				config->logLvl = pVal;
 			}else{ ret = SP_CONFIG_ST_ERR; *msg = SP_CONFIG_INVALID_INTEGER; }
 			break;
 		case VARNUM_logFile:
-			spConfig->logFile = pBuff;
+			config->logFile = pBuff;
 			break;
 	}
 	return ret;
 }
 
-char* spConfigGetImgDir(const spConfig config, SP_CONFIG_MSG* msg)
+char* spConfigGetImgDir(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	CFG_GET(config->imgDir);
 }
-char* spConfigGetImgPrefix(const spConfigCreate config, SP_CONFIG_MSG* msg)
+char* spConfigGetImgPrefix(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	CFG_GET(config->imgPre);
 }
-char* spConfigGetImgSuffix(const spConfigCreate config, SP_CONFIG_MSG* msg)
+char* spConfigGetImgSuffix(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	CFG_GET(config->imgSuf);
 }
@@ -319,7 +314,7 @@ int spConfigGetPCADim(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	CFG_GET(config->pcaDim);
 }
-char* spConfigGetPCAFile(const spConfig config, SP_CONFIG_MSG* msg)
+char* spConfigGetPCAFile(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	CFG_GET(config->pcaFile);
 }
@@ -335,7 +330,7 @@ int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	CFG_GET(config->knnNumImg);
 }
-SP_KDT_SPLIT spConfgGetSplitMethod(const spConfig config, SP_CONFIG_MSG* msg)
+SP_KDT_SPLIT spConfgGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	CFG_GET(config->splitMethod);
 }
@@ -372,7 +367,7 @@ SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
 	int iLen = getDigitscount(index);
 	int sufLen = strlen(config->imgSuf);
 	totalLen = dirLen + preLen + iLen + sufLen + 1;
-	// imagePath = (char*)malloc(totalLen);
+	/* imagePath = (char*)malloc(totalLen); */
 	memset(imagePath, '\0', totalLen);
 
 	strcpy(imagePath, config->imgDir);
@@ -392,7 +387,7 @@ SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config)
 	int dirLen = strlen(config->imgDir);
 	int pcaLen = strlen(config->pcaFile);
 	totalLen = dirLen + pcaLen + 1;
-	// imagePath = (char*)malloc(totalLen*sizeof(char));
+	/* imagePath = (char*)malloc(totalLen*sizeof(char)); */
 	memset(imagePath, '\0', totalLen);
 
 	strcpy(imagePath, config->imgDir);
@@ -414,7 +409,7 @@ SP_CONFIG_MSG spConfigGetMissingmessage(int offset)
 		case SP_CONFIG_MISSING_NUM_IMAGES:
 			return SP_CONFIG_MISSING_NUM_IMAGE;
 		default:
-			return NULL; // unreachable
+			return NULL; /* unreachable */
 	}
 }
 
@@ -428,7 +423,7 @@ int spConfigGetUnset(int wereSet)
 	return i;
 }
 
-void spConfigDestroyPartial(spConfig config, int set[])
+void spConfigDestroyPartial(SPConfig config, int set[])
 {
 	if(config != NULL)
 	{
