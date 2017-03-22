@@ -5,9 +5,38 @@
 #include <stdio.h>
 #include "SPLogger.h"
 #include "SPKDTree.h"
+
+/**
+ * A data-structure which is used for configuring the system.
+ */
+
+typedef enum sp_config_msg_t {
+	SP_CONFIG_MISSING_DIR,
+	SP_CONFIG_MISSING_PREFIX,
+	SP_CONFIG_MISSING_SUFFIX,
+	SP_CONFIG_MISSING_NUM_IMAGES,
+	SP_CONFIG_CANNOT_OPEN_FILE,
+	SP_CONFIG_ALLOC_FAIL,
+	SP_CONFIG_INVALID_INTEGER,
+	SP_CONFIG_INVALID_STRING,
+	SP_CONFIG_INVALID_ARGUMENT,
+	SP_CONFIG_INDEX_OUT_OF_RANGE,
+	SP_CONFIG_SUCCESS
+} SP_CONFIG_MSG;
+
+typedef enum sp_config_line_status_t {
+	SP_CONFIG_ST_SUCCESS,
+	SP_CONFIG_ST_ERR,
+	SP_CONFIG_ST_END
+} SP_CONFIG_LINE_STATUS;
+
+typedef struct sp_config_t* SPConfig;
+
 /* Constants: */
+#define VARS_COUNT 14
 #define MAX_LINE_SIZE 1024 /* may be assumed according to the forum */
-#define READ_MODE "r"
+#define TRUE_STR "true"
+#define FALSE_STR "false"
 /* Split method names: */
 #define SPLIT_RAND "RANDOM"
 #define SPLIT_MAX "MAX_SPREAD"
@@ -24,6 +53,41 @@
 #define ERR_MSG_OPEN_CFG_FILE "The %s configuration file %s couldn't be open"
 #define ERR_MSG_PART_DEFAULT "default "
 #define ERR_MSG_PART_NON_DEFAULT ""
+/* Special characters: */
+#define SPACE_CHAR ' '
+#define NEWLINE_CHAR '\n'
+#define SET_CHAR '='
+#define COMMENT_CHAR '#'
+#define NULL_CHAR '\0'
+/* vars nums and names: */
+#define VARNUM_imgDir 0
+#define VARNUM_imgPre 1
+#define VARNUM_imgSuf 2
+#define VARNUM_imgNum 3
+#define VARNUM_pcaDim 4
+#define VARNUM_pcaFile 5
+#define VARNUM_featureNum 6
+#define VARNUM_extractMode 7
+#define VARNUM_knnNumImg 8
+#define VARNUM_splitMethod 9
+#define VARNUM_knnNumFeatures 10
+#define VARNUM_useMinGUI 11
+#define VARNUM_logLvl 12
+#define VARNUM_logFile 13
+#define VARNAME_imgDir "spImagesDirectory"
+#define VARNAME_imgPre "spImagesPrefix"
+#define VARNAME_imgSuf "spImagesSuffix"
+#define VARNAME_imgNum "spNumOfImages"
+#define VARNAME_pcaDim "spPCADimension"
+#define VARNAME_pcaFile "spPCAFilename"
+#define VARNAME_featureNum "spNumOfFeatures"
+#define VARNAME_extractMode "spExtractionMode"
+#define VARNAME_knnNumImg "spNumOfSimilarImages"
+#define VARNAME_splitMethod "spKDTreeSplitMethod"
+#define VARNAME_knnNumFeatures "spKNN"
+#define VARNAME_useMinGUI "spMinimalGUI"
+#define VARNAME_logLvl "spLoggerLevel"
+#define VARNAME_logFile "spLoggerFilename"
 /* Default values: */
 #define DEFAULT_PCA_DIM 20
 #define DEFAULT_PCA_FILE "pca.yml"
@@ -37,41 +101,48 @@
 #define DEFAULT_LOG_LEVEL 3
 #define DEFAULT_LOG_FILE "stdout"
 /* Macros: */
-#define GETTER_BODY(toGet, bad) do{\
-		if(config == NULL)\
-		{\
-			*msg = SP_CONFIG_INVALID_ARGUMENT;\
-			return (bad);\
-		}\
+#define FREE_IF_SET(var, loc) if(set[(loc)] == 1){free(var);}
+#define CFG_GET(var) do{\
+		if(config==NULL)\
+			{\
+				*msg=SP_CONFIG_INVALID_ARGUMENT;\
+				return NULL;\
+			}\
 		*msg = SP_CONFIG_SUCCESS;\
-		return (toGet);\
+		return (var);\
 	}while(0);
-#define CFG_SET(toSet, value) do{\
-		(toSet) = (value);\
+#define cfgSet(var, varLoc, val) do{\
+		(var) = (val);
+		set[(varLoc)] = 2;
 	}while(0);
-#define CHECK_UNSET(t, uv, rn) if((t)==(uv)){return rn;}
-/**
- * A data-structure which is used for configuring the system.
- */
-
-typedef enum sp_config_msg_t {
-	SP_CONFIG_MISSING_DIR,
-	SP_CONFIG_MISSING_PREFIX,
-	SP_CONFIG_MISSING_SUFFIX,
-	SP_CONFIG_MISSING_NUM_IMAGES,
-	SP_CONFIG_CANNOT_OPEN_FILE,
-	SP_CONFIG_ALLOC_FAIL,
-	SP_CONFIG_INVALID_INTEGER,
-	SP_CONFIG_INVALID_STRING,
-	SP_CONFIG_INVALID_ARGUMENT,
-	SP_CONFIG_BAD_LINE,
-	SP_CONFIG_INDEX_OUT_OF_RANGE,
-	SP_CONFIG_SUCCESS
-} SP_CONFIG_MSG;
-
-typedef struct sp_config_t* SPConfig;
-
-
+#define SKIP_WHITESPACES(ptr) do{\
+		while((ptr)[0] == SPACE_CHAR || (ptr)[0] == NEWLINE_CHAR) {\
+			(ptr)++;\
+		}\
+	}while(0);
+#define SKIP_TO_SPECIAL(ptr) do{\
+		while((ptr)[0] != SPACE_CHAR && (ptr)[0] != NEWLINE_CHAR &&\
+			(ptr)[0] != NULL_CHAR && (ptr)[0] != SET_CHAR) {\
+			(ptr)++;\
+		}\
+	}while(0);
+#define VAR_IS_INT(name) (!(strcmp((name), VARNAME_imgNum)*\
+							strcmp((name), VARNAME_pcaDim)*\
+							strcmp((name), VARNAME_featureNum)*\
+							strcmp((name), VARNAME_knnNumImg)*\
+							strcmp((name), VARNAME_knnNumFeatures)*\
+							strcmp((name), VARNAME_logLvl)))
+#define IS_GOOD_SUFFIX(buf) (!(strcmp((buf), SUFFIX_BMP)*\
+							strcmp((buf), SUFFIX_JPG)*\
+							strcmp((buf), SUFFIX_PNG)*\
+							strcmp((buf), SUFFIX_GIF)))
+#define IS_BOOL(buf) (!(strcmp((buf), TRUE_STR)*\
+							strcmp((buf), FALSE_STR)))
+#define IS_GOOD_SPLIT(buf)(!(strcmp((buf), SPLIT_INC)*\
+							strcmp((buf), SPLIT_MAX)*\
+							strcmp((buf), SPLIT_RAND)))
+#define ELSE_SET_INV_INT 
+#define CHECK_VAR_NUM(name, comp, num) if(!strcmp((name), (comp))){return (num);}
 /**
  * Creates a new system configuration struct. The configuration struct
  * is initialized based on the configuration file given by 'filename'.
@@ -96,15 +167,21 @@ typedef struct sp_config_t* SPConfig;
  *
  *
  */
-SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg);
+SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg, int set[]);
 
-void spConfigInitDefaults(SPConfig config);
+void spConfigInitConfig(SPConfig config, int set[]);
 
-int spConfigGetUnset(SPConfig config);
+SP_CONFIG_LINE_STATUS spConfigProcessLine(SPConfig config,
+				File* f, SP_CONFIG_MSG* msg);
 
+SP_CONFIG_MSG spConfigSplitLine(char* line, char* src, char* dst);
 
+int spConfigVarNum(char* varName);
 
-bool spConfigSetValue(SPConfig config, char* var, char* val);
+char* spConfigVarName(int varNum);
+
+SP_CONFIG_LINE_STATUS spConfigAssertAndSet(SPConfig config,
+				int varNum, char* valStr, SP_CONFIG_MSG* msg);
 
 char* spConfigGetImgDir(const SPConfig config, SP_CONFIG_MSG* msg);
 
@@ -172,7 +249,7 @@ int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg);
 
 SP_KDT_SPLIT spConfgGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg);
 
-int spConfigGetNumOfSimilarFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
+bool spConfigGetNumOfSimilarFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
 
 /*
  * Returns true if spMinimalGUI = true, false otherwise.
@@ -189,7 +266,7 @@ bool spConfigMinimalGui(const SPConfig config, SP_CONFIG_MSG* msg);
 
 int spConfigGetLogLevel(const SPConfig config, SP_CONFIG_MSG* msg);
 
-char* spConfigGetLogFile(const SPConfig config, SP_CONFIG_MSG* msg);
+char* spConfigGetLogLevel(const SPConfig config, SP_CONFIG_MSG* msg);
 
 /**
  * Given an index 'index' the function stores in imagePath the full path of the
@@ -236,6 +313,10 @@ SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
  *  - SP_CONFIG_SUCCESS - in case of success
  */
 SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config);
+
+int spConfigGetUnset(int wereSet);
+
+void spConfigDestroyPartial(SPConfig config, int set[]);
 
 /**
  * Frees all memory resources associate with config. 
