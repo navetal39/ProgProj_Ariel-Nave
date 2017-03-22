@@ -8,15 +8,6 @@
 /* Constants: */
 #define MAX_LINE_SIZE 1024 /* may be assumed according to the forum */
 #define READ_MODE "r"
-/* Split method names: */
-#define SPLIT_RAND "RANDOM"
-#define SPLIT_MAX "MAX_SPREAD"
-#define SPLIT_INC "INCREMENTAL"
-/* Allowed suffixes: */
-#define SUFFIX_JPG ".jpg"
-#define SUFFIX_PNG ".png"
-#define SUFFIX_BMP ".bmp"
-#define SUFFIX_GIF ".gif"
 /* Error messagesL */
 #define ERR_MSG_INVALID_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line"
 #define ERR_MSG_INVALID_VAL "File: %s\nLine: %d\nMessage: Invalid value - constraint not met"

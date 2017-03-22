@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #define NULL_CHAR '\0'
 #define COMMENT_CHAR '#'
 #define SET_CHAR '='
@@ -18,12 +19,38 @@
 #define VARNUM_useMinGUI 11
 #define VARNUM_logLvl 12
 #define VARNUM_logFile 13
-
+/* Var names: */
+#define VARNAME_imgDir "spImagesDirectory"
+#define VARNAME_imgPre "spImagesPrefix"
+#define VARNAME_imgSuf "spImagesSuffix"
+#define VARNAME_imgNum "spNumOfImages"
+#define VARNAME_pcaDim "spPCADimension"
+#define VARNAME_pcaFile "spPCAFilename"
+#define VARNAME_featureNum "spNumOfFeatures"
+#define VARNAME_extractMode "spExtractionMode"
+#define VARNAME_knnNumImg "spNumOfSimilarImages"
+#define VARNAME_splitMethod "spKDTreeSplitMethod"
+#define VARNAME_knnNumFeatures "spKNN"
+#define VARNAME_useMinGUI "spMinimalGUI"
+#define VARNAME_logLvl "spLoggerLevel"
+#define VARNAME_logFile "spLoggerFilename"
+/* Boolean Names: */
+#define VAL_BOOL_TRUE "true"
+#define VAL_BOOL_FALSE "false"
+/* Splie Method Names: */
+#define VAL_SPLIT_RAND "RANDOM"
+#define VAL_SPLIT_MAX "MAX_SPREAD"
+#define VAL_SPLIT_INC "INCREMENTAL"
+/* Allowed suffixes: */
+#define VAL_SUFFIX_JPG ".jpg"
+#define VAL_SUFFIX_PNG ".png"
+#define VAL_SUFFIX_BMP ".bmp"
+#define VAL_SUFFIX_GIF ".gif"
+/* Macros: */
+#define COMPARE_AND_RETURN(var, name, num) if(!strcmp((var),(name))){return(num);}
 typedef enum sp_config_util_msg_t {
 	SP_CONFIG_UTIL_SUCCESS,
 	SP_CONFIG_UTIL_EMPTY_LINE,
-	SP_CONFIG_UTIL_BAD_VAR,
-	SP_CONFIG_UTIL_BAD_VAL,
 	SP_CONFIG_UTIL_BAD_LINE
 } SP_CONFIG_UTIL_MSG;
 
@@ -31,6 +58,24 @@ int spConfigUtilCountDigits(int num);
 
 SP_CONFIG_UTIL_MSG spConfigUtilParseLine(char* line, char** var, char** val);
 
-SP_CONFIG_UTIL_MSG spConfigUtilIsBadInt(char* var);
+bool spConfigUtilIsInt(int varNum);
+
+bool spConfigUtilIsBoolean(int varNum);
+
+bool spConfigUtilIsString(int varNum);
+
+int spConfigUtilGetVarNum(char* varName);
+
+bool spConfigUtilSetAtLoc(void* loc, int varNum, char* valStr);
+
+bool spConfigUtilSetIntAtLoc(int* loc, char* valStr);
+
+bool spConfigUtilSetBooleanAtLoc(int* loc, char* valStr);
+
+bool spConfigUtilSetStringAtLoc(char** loc, char* valStr);
+
+bool spConfigUtilsSetStringSuffixAtLoc(char** loc, char* valStr);
+
+bool spConfigUtilSetSplitAtLoc(SP_KDT_SPLIT* loc, char* valStr);
 
 void spConfigUtilPrintUnset(int unset);

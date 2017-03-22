@@ -63,7 +63,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		if(utilMsg != SP_CONFIG_UTIL_EMPTY_LINE &&
 			!spConfigSetValue(config, var, val))
 		{
-			*msg =(spConfigUtilIsBadInt(var))
+			*msg =(spConfigUtilIsInt(spConfigUtilGetVarNum(var)))
 				?SP_CONFIG_INVALID_INTEGER
 				:SP_CONFIG_INVALID_STRING;
 		}
@@ -97,7 +97,58 @@ void spConfigInitDefaults(SPConfig config)
 
 bool spConfigSetValue(SPConfig config, char* var, char* val)
 {
-	return false; /* TODO finish */
+	int varNum = spConfigUtilGetVarNum(var);
+	void* loc;
+	if(varNum<VARNUM_imgDir||varNum>VARNUM_logFile){ return false; }
+	switch(varNum)
+	{
+		case VARNUM_imgDir:
+			loc = (void*)(&(config->imgDir));
+			break;
+		case VARNUM_imgPre:
+			loc = (void*)(&(config->imgPre));
+			break;
+		case VARNUM_imgSuf:
+			loc = (void*)(&(config->imgSuf));
+			break;
+		case VARNUM_imgNum:
+			loc = (void*)(&(config->imgNum));
+			break;
+		case VARNUM_pcaDim:
+			loc = (void*)(&(config->pcaDim));
+			break;
+		case VARNUM_pcaFile:
+			loc = (void*)(&(config->pcaFile));
+			break;
+		case VARNUM_featureNum:
+			loc = (void*)(&(config->featureNum));
+			break;
+		case VARNUM_extractMode:
+			loc = (void*)(&(config->extractMode));
+			break;
+		case VARNUM_knnNumImg:
+			loc = (void*)(&(config->knnNumImg));
+			break;
+		case VARNUM_splitMethod:
+			loc = (void*)(&(config->splitMethod));
+			break;
+		case VARNUM_knnNumFeatures:
+			loc = (void*)(&(config->knnNumFeatures));
+			break;
+		case VARNUM_useMinGUI:
+			loc = (void*)(&(config->useMinGUI));
+			break;
+		case VARNUM_logLvl:
+			loc = (void*)(&(config->logLvl));
+			break;
+		case VARNUM_logFile:
+			loc = (void*)(&(config->logFile));
+			break;
+		default:
+			loc = NULL;
+			break;
+	}
+	return spConfigUtilSetAtLoc(loc, varNum, val);
 }
 
 int spConfigGetUnset(SPConfig config)
