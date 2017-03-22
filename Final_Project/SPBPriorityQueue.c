@@ -1,4 +1,5 @@
 #include "SPBPriorityQueue.h"
+#include "SPKDTree.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>

@@ -1,4 +1,6 @@
 #include <stdbool.h>
+#include "SPKDTree.h"
+
 #define NULL_CHAR '\0'
 #define COMMENT_CHAR '#'
 #define SET_CHAR '='

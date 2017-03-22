@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h> /* for isdigit */
 #include "SPConfigUtil.h"
 
@@ -103,7 +104,7 @@ bool spConfigUtilSetAtLoc(void* loc, int varNum, char* valStr)
 	{
 		return spConfigUtilSetIntAtLoc((int*) loc, valStr);
 	}
-	if(spConfigUtilIsBool(varNum))
+	if(spConfigUtilIsBoolean(varNum))
 	{
 		return spConfigUtilSetBooleanAtLoc((int*) loc, valStr);
 	}

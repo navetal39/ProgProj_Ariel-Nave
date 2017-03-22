@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "SPConfigUtil.h"
 #include "SPLogger.h"
 #include "SPConfig.h"
 
@@ -29,13 +28,21 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	FILE* configFile;
 	SPConfig config;
 	int lineNum = 0, unset;
-	char *var, *val, *line = (char*)malloc((MAX_LINE_SIZE+2)*sizeof(char));
+	char *var, *val, *line;
 	SP_CONFIG_UTIL_MSG utilMsg;
+	line = (char*)malloc((MAX_LINE_SIZE+2)*sizeof(char));
+	if(line == NULL)
+	{
+		/* TODO print error */
+		*msg = SP_CONFIG_ALLOC_FAIL;
+		return NULL;
+	}
 	configFile = fopen(filename, READ_MODE);
 	if(configFile == NULL)
 	{
 		/* TODO print error */
 		*msg = SP_CONFIG_CANNOT_OPEN_FILE;
+		free(line);
 		return NULL;
 	}
 	config = (SPConfig)malloc(sizeof(struct sp_config_t));
@@ -44,6 +51,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		/* TODO print error */
 		*msg = SP_CONFIG_ALLOC_FAIL;
 		fclose(configFile);
+		free(line);
 		return NULL;
 	}
 	memset(config, 0, sizeof(struct sp_config_t));
@@ -54,9 +62,10 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		if((utilMsg = spConfigUtilParseLine(line, &var, &val)) ==
 			SP_CONFIG_UTIL_BAD_LINE)
 		{
-			*msg = SP_CONFIG_BAD_LINE;
 			/* TODO print error */
+			*msg = SP_CONFIG_BAD_LINE;
 			fclose(configFile);
+			free(config); /* TODO don't free unallocated ones */
 			free(line);
 			return NULL;
 		}
@@ -73,7 +82,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	if(unset >= 0)
 	{
 		spConfigUtilPrintUnset(unset);
-		free(config);
+		free(config); /* TODO don't free unallocated ones */
 		config = NULL;
 	}
 	fclose(configFile);

@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "SPLogger.h"
-#include "SPKDTree.h"
+#include "SPConfigUtil.h"
 /* Constants: */
 #define MAX_LINE_SIZE 1024 /* may be assumed according to the forum */
 #define READ_MODE "r"
