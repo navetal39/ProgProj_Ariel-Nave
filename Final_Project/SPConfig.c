@@ -254,6 +254,11 @@ char* spConfigGetLogFile(const SPConfig config, SP_CONFIG_MSG* msg)
 SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
 		int index)
 {
+	int dirLen;
+	int preLen;
+	int iLen;
+	int sufLen;
+	int totalLen;
 	if(imagePath == NULL || config == NULL)
 	{
 		return SP_CONFIG_INVALID_ARGUMENT;
@@ -262,11 +267,11 @@ SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
 	{
 		return SP_CONFIG_INDEX_OUT_OF_RANGE;
 	}
-	int dirLen = strlen(config->imgDir);
-	int preLen = strlen(config->imgPre);
-	int iLen = spConfigUtilCountDigits(index);
-	int sufLen = strlen(config->imgSuf);
-	int totalLen = dirLen + preLen + iLen + sufLen + 1;
+	dirLen = strlen(config->imgDir);
+	preLen = strlen(config->imgPre);
+	iLen = spConfigUtilCountDigits(index);
+	sufLen = strlen(config->imgSuf);
+	totalLen = dirLen + preLen + iLen + sufLen + 1;
 	/* imagePath = (char*)malloc(totalLen); */
 	memset(imagePath, NULL_CHAR, totalLen);
 
@@ -280,13 +285,16 @@ SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
 
 SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config)
 {
+	int dirLen;
+	int pcaLen;
+	int totalLen;
 	if(pcaPath == NULL || config == NULL)
 	{
 		return SP_CONFIG_INVALID_ARGUMENT;
 	}
-	int dirLen = strlen(config->imgDir);
-	int pcaLen = strlen(config->pcaFile);
-	int totalLen = dirLen + pcaLen + 1;
+	dirLen = strlen(config->imgDir);
+	pcaLen = strlen(config->pcaFile);
+	totalLen = dirLen + pcaLen + 1;
 	/* imagePath = (char*)malloc(totalLen*sizeof(char)); */
 	memset(pcaPath, NULL_CHAR, totalLen);
 
