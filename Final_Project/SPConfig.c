@@ -316,8 +316,3 @@ void spConfigDestroy(SPConfig config)
 		free(config);
 	}	
 }
-
-int main()
-{
-	return 0;
-}
