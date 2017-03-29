@@ -22,7 +22,7 @@ SP_CONFIG_UTIL_MSG spConfigUtilParseLine(char* line, char** var, char** val)
 	temp[1] = strtok(NULL, WHITESPACE_CHARS);
 	temp[2] = strtok(NULL, WHITESPACE_CHARS);
 	temp[3] = strtok(NULL, WHITESPACE_CHARS);
-	/* Empty/Comment line: */
+
 	if(temp[0]==NULL || temp[0][0] == COMMENT_CHAR) {
 		return SP_CONFIG_UTIL_EMPTY_LINE;
 	}
@@ -81,21 +81,39 @@ bool spConfigUtilIsString(int varNum)
 
 int spConfigUtilGetVarNum(char* varName)
 {
-	COMPARE_AND_RETURN(varName, VARNAME_imgDir,			VARNUM_imgDir);
-	COMPARE_AND_RETURN(varName, VARNAME_imgPre,			VARNUM_imgPre);
-	COMPARE_AND_RETURN(varName, VARNAME_imgSuf,			VARNUM_imgSuf);
-	COMPARE_AND_RETURN(varName, VARNAME_imgNum,			VARNUM_imgNum);
-	COMPARE_AND_RETURN(varName, VARNAME_pcaDim,			VARNUM_pcaDim);
-	COMPARE_AND_RETURN(varName, VARNAME_pcaFile,		VARNUM_pcaFile);
-	COMPARE_AND_RETURN(varName, VARNAME_featureNum,		VARNUM_featureNum);
-	COMPARE_AND_RETURN(varName, VARNAME_extractMode,	VARNUM_extractMode);
-	COMPARE_AND_RETURN(varName, VARNAME_knnNumImg,		VARNUM_knnNumImg);
-	COMPARE_AND_RETURN(varName, VARNAME_splitMethod,	VARNUM_splitMethod);
-	COMPARE_AND_RETURN(varName, VARNAME_knnNumFeatures,	VARNUM_knnNumFeatures);
-	COMPARE_AND_RETURN(varName, VARNAME_useMinGUI,		VARNUM_useMinGUI);
-	COMPARE_AND_RETURN(varName, VARNAME_logLvl,			VARNUM_logLvl);
-	COMPARE_AND_RETURN(varName, VARNAME_logFile,		VARNUM_logFile);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_imgDir,			VARNUM_imgDir);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_imgPre,			VARNUM_imgPre);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_imgSuf,			VARNUM_imgSuf);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_imgNum,			VARNUM_imgNum);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_pcaDim,			VARNUM_pcaDim);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_pcaFile,		VARNUM_pcaFile);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_featureNum,		VARNUM_featureNum);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_extractMode,	VARNUM_extractMode);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_knnNumImg,		VARNUM_knnNumImg);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_splitMethod,	VARNUM_splitMethod);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_knnNumFeatures,	VARNUM_knnNumFeatures);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_useMinGUI,		VARNUM_useMinGUI);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_logLvl,			VARNUM_logLvl);
+	COMPARE_AND_RETURN_STR(varName, VARNAME_logFile,		VARNUM_logFile);
 	return -1;
+}
+char* spConfigUtilGetVarName(int varNum)
+{
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_imgDir,			VARNAME_imgDir);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_imgPre,			VARNAME_imgPre);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_imgSuf,			VARNAME_imgSuf);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_imgNum,			VARNAME_imgNum);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_pcaDim,			VARNAME_pcaDim);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_pcaFile,			VARNAME_pcaFile);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_featureNum,		VARNAME_featureNum);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_extractMode,		VARNAME_extractMode);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_knnNumImg,		VARNAME_knnNumImg);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_splitMethod,		VARNAME_splitMethod);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_knnNumFeatures,	VARNAME_knnNumFeatures);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_useMinGUI,		VARNAME_useMinGUI);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_logLvl,			VARNAME_logLvl);
+	COMPARE_AND_RETURN_INT(varNum, VARNUM_logFile,			VARNAME_logFile);
+	return NULL;
 }
 
 bool spConfigUtilSetAtLoc(void* loc, int varNum, char* valStr)
@@ -177,8 +195,4 @@ bool spConfigUtilSetSplitAtLoc(SP_KDT_SPLIT* loc, char* valStr)
 		return true;
 	}
 	return false;
-}
-void spConfigUtilPrintUnset(int unset)
-{
-	/* TODO this too */
 }

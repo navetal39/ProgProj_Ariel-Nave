@@ -41,6 +41,7 @@
 		(toSet) = (value);\
 	}while(0);
 #define CHECK_UNSET(t, uv, rn) if((t)==(uv)){return rn;}
+#define CHECK_AND_FREE(v) if((v)!=NULL) free((v));
 /**
  * A data-structure which is used for configuring the system.
  */

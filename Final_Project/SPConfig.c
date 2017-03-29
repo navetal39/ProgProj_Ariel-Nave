@@ -62,16 +62,17 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		if((utilMsg = spConfigUtilParseLine(line, &var, &val)) ==
 			SP_CONFIG_UTIL_BAD_LINE)
 		{
-			/* TODO print error */
+			printf(ERR_MSG_INV_LINE, filename, lineNum);
 			*msg = SP_CONFIG_BAD_LINE;
 			fclose(configFile);
-			free(config); /* TODO don't free unallocated ones */
+			spConfigDestroy(config);
 			free(line);
 			return NULL;
 		}
 		if(utilMsg != SP_CONFIG_UTIL_EMPTY_LINE &&
 			!spConfigSetValue(config, var, val))
 		{
+			printf(ERR_MSG_CONSTRNT, filename, lineNum);
 			*msg =(spConfigUtilIsInt(spConfigUtilGetVarNum(var)))
 				?SP_CONFIG_INVALID_INTEGER
 				:SP_CONFIG_INVALID_STRING;
@@ -81,8 +82,9 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	unset = spConfigGetUnset(config);
 	if(unset >= 0)
 	{
-		spConfigUtilPrintUnset(unset);
-		free(config); /* TODO don't free unallocated ones */
+		var = spConfigUtilGetVarName(unset);
+		printf(ERR_MSG_NO_VALUE, filename, lineNum, var);
+		spConfigDestroy(config);
 		config = NULL;
 	}
 	fclose(configFile);
@@ -298,11 +300,11 @@ void spConfigDestroy(SPConfig config)
 {
 	if(config != NULL)
 	{
-		free(config->imgDir);
-		free(config->imgPre);
-		free(config->imgSuf);
-		free(config->pcaFile);
-		free(config->logFile);
+		CHECK_AND_FREE(config->imgDir);
+		CHECK_AND_FREE(config->imgPre);
+		CHECK_AND_FREE(config->imgSuf);
+		CHECK_AND_FREE(config->pcaFile);
+		CHECK_AND_FREE(config->logFile);
 		free(config);
 	}	
 }

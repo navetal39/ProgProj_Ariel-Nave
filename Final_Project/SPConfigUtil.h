@@ -6,6 +6,10 @@
 #define SET_CHAR '='
 #define SET_CHAR_STR "="
 #define WHITESPACE_CHARS " \f\n\r\t\v"
+/* Error messages: */
+#define ERR_MSG_INV_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line"
+#define ERR_MSG_CONSTRNT "File: %s\nLine: %d\nMessage: Invalid value - constraint not met"
+#define ERR_MSG_NO_VALUE "File: %s\nLine: %d\nMessage: Parameter %s is not set"
 /* Var nums: */
 #define VARNUM_imgDir 0
 #define VARNUM_imgPre 1
@@ -49,7 +53,8 @@
 #define VAL_SUFFIX_BMP ".bmp"
 #define VAL_SUFFIX_GIF ".gif"
 /* Macros: */
-#define COMPARE_AND_RETURN(var, name, num) if(!strcmp((var),(name))){return(num);}
+#define COMPARE_AND_RETURN_INT(var, num, name) if((var)==(num)){return(name);}
+#define COMPARE_AND_RETURN_STR(var, name, num) if(!strcmp((var),(name))){return(num);}
 typedef enum sp_config_util_msg_t {
 	SP_CONFIG_UTIL_SUCCESS,
 	SP_CONFIG_UTIL_EMPTY_LINE,
@@ -67,6 +72,8 @@ bool spConfigUtilIsBoolean(int varNum);
 bool spConfigUtilIsString(int varNum);
 
 int spConfigUtilGetVarNum(char* varName);
+
+char* spConfigUtilGetVarName(int varNum);
 
 bool spConfigUtilSetAtLoc(void* loc, int varNum, char* valStr);
 
