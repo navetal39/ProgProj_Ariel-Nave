@@ -7,9 +7,9 @@
 #define SET_CHAR_STR "="
 #define WHITESPACE_CHARS " \f\n\r\t\v"
 /* Error messages: */
-#define ERR_MSG_INV_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line"
-#define ERR_MSG_CONSTRNT "File: %s\nLine: %d\nMessage: Invalid value - constraint not met"
-#define ERR_MSG_NO_VALUE "File: %s\nLine: %d\nMessage: Parameter %s is not set"
+#define ERR_MSG_INV_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line\n"
+#define ERR_MSG_CONSTRNT "File: %s\nLine: %d\nMessage: Invalid value - constraint not met\n"
+#define ERR_MSG_NO_VALUE "File: %s\nLine: %d\nMessage: Parameter %s is not set\n"
 /* Var nums: */
 #define VARNUM_imgDir 0
 #define VARNUM_imgPre 1

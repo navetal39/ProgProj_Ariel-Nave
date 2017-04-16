@@ -316,3 +316,11 @@ void spConfigDestroy(SPConfig config)
 		free(config);
 	}	
 }
+
+int main(int argc, char* argv[])
+{
+	/* TODO remove */
+	SP_CONFIG_MSG msg;
+	SPConfig c = spConfigCreate("trump.txt", &msg);
+	return 0;
+}
