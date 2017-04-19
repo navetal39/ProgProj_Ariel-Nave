@@ -2,12 +2,16 @@
 #define SPCONFIG_H_
 
 #include <stdbool.h>
-#include <stdio.h>
 #include "SPLogger.h"
-#include "SPConfigUtil.h"
+#include "SPKDTree.h"
 /* Constants: */
 #define MAX_LINE_SIZE 1024 /* may be assumed according to the forum */
 #define READ_MODE "r"
+#define NULL_CHAR '\0'
+#define WHITESPACE_STR " \f\n\r\t\v"
+#define SET_CHAR '='
+#define SET_CHAR_STR "="
+#define COMMENT_CHAR '#'
 /* Error messagesL */
 #define ERR_MSG_INVALID_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line"
 #define ERR_MSG_INVALID_VAL "File: %s\nLine: %d\nMessage: Invalid value - constraint not met"
@@ -16,14 +20,15 @@
 #define ERR_MSG_PART_DEFAULT "default "
 #define ERR_MSG_PART_NON_DEFAULT ""
 /* Default values: */
+#define DEFAULT_CFG_FILE "spcbir.config"
+
 #define DEFAULT_PCA_DIM 20
 #define DEFAULT_PCA_FILE "pca.yml"
-#define DEFAULT_CFG_FILE "spcbir.config"
 #define DEFAULT_FEATURES_NUM 100
 #define DEFAULT_EXT_MODE true
 #define DEFAULT_MIN_GUI false
 #define DEFAULT_SIM_IMG_NUM 1
-#define DEFAULT_KNN_FEATS 1
+#define DEFAULT_KNN 1
 #define DEFAULT_SPLIT_METHOD SP_KD_SPLIT_MAX_SPREAD
 #define DEFAULT_LOG_LEVEL 3
 #define DEFAULT_LOG_FILE "stdout"
@@ -37,7 +42,6 @@
 		*msg = SP_CONFIG_SUCCESS;\
 		return (toGet);\
 	}while(0);
-#define CHECK_AND_FREE(v) if((v)!=NULL) free((v));
 /**
  * A data-structure which is used for configuring the system.
  */
@@ -85,6 +89,12 @@ typedef struct sp_config_t* SPConfig;
  *
  */
 SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg);
+
+void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg);
+
+void spConfigParseAndSet(SPConfig cfg, char* line, int lineNum, SP_CONFIG_MSG* msg);
+
+void spConfigParseLine(char* line, char** varName, char** valStr, SP_CONFIG_MSG* msg);
 
 char* spConfigGetImgDir(const SPConfig config, SP_CONFIG_MSG* msg);
 
