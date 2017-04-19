@@ -92,95 +92,6 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	return config;
 }
 
-void spConfigInitDefaults(SPConfig config)
-{
-	config->pcaDim			=	DEFAULT_PCA_DIM;
-	config->pcaFile			=	DEFAULT_PCA_FILE;
-	config->featureNum		=	DEFAULT_FEATURES_NUM;
-	config->extractMode		=	DEFAULT_EXT_MODE;
-	config->useMinGUI		=	DEFAULT_MIN_GUI;
-	config->knnNumImg		=	DEFAULT_SIM_IMG_NUM;
-	config->knnNumFeatures	=	DEFAULT_KNN_FEATS;
-	config->splitMethod		=	DEFAULT_SPLIT_METHOD;
-	config->logLvl			=	DEFAULT_LOG_LEVEL;
-	config->logFile			=	DEFAULT_LOG_FILE;
-}
-
-bool spConfigSetValue(SPConfig config, char* var, char* val)
-{
-	int varNum = spConfigUtilGetVarNum(var);
-	void* loc;
-	if(varNum<VARNUM_imgDir||varNum>VARNUM_logFile){ return false; }
-	switch(varNum)
-	{
-		case VARNUM_imgDir:
-			loc = (void*)(&(config->imgDir));
-			break;
-		case VARNUM_imgPre:
-			loc = (void*)(&(config->imgPre));
-			break;
-		case VARNUM_imgSuf:
-			loc = (void*)(&(config->imgSuf));
-			break;
-		case VARNUM_imgNum:
-			loc = (void*)(&(config->imgNum));
-			break;
-		case VARNUM_pcaDim:
-			loc = (void*)(&(config->pcaDim));
-			break;
-		case VARNUM_pcaFile:
-			loc = (void*)(&(config->pcaFile));
-			break;
-		case VARNUM_featureNum:
-			loc = (void*)(&(config->featureNum));
-			break;
-		case VARNUM_extractMode:
-			loc = (void*)(&(config->extractMode));
-			break;
-		case VARNUM_knnNumImg:
-			loc = (void*)(&(config->knnNumImg));
-			break;
-		case VARNUM_splitMethod:
-			loc = (void*)(&(config->splitMethod));
-			break;
-		case VARNUM_knnNumFeatures:
-			loc = (void*)(&(config->knnNumFeatures));
-			break;
-		case VARNUM_useMinGUI:
-			loc = (void*)(&(config->useMinGUI));
-			break;
-		case VARNUM_logLvl:
-			loc = (void*)(&(config->logLvl));
-			break;
-		case VARNUM_logFile:
-			loc = (void*)(&(config->logFile));
-			break;
-		default:
-			loc = NULL;
-			break;
-	}
-	return spConfigUtilSetAtLoc(loc, varNum, val);
-}
-
-int spConfigGetUnset(SPConfig config)
-{
-	CHECK_UNSET(config->imgDir,			NULL,					VARNUM_imgDir);
-	CHECK_UNSET(config->imgPre,			NULL,					VARNUM_imgPre);
-	CHECK_UNSET(config->imgSuf,			NULL,					VARNUM_imgSuf);
-	CHECK_UNSET(config->imgNum,			0,						VARNUM_imgNum);
-	CHECK_UNSET(config->pcaDim,			0,						VARNUM_pcaDim);
-	CHECK_UNSET(config->pcaFile,		NULL,					VARNUM_pcaFile);
-	CHECK_UNSET(config->featureNum,		0,						VARNUM_featureNum);
-	CHECK_UNSET(config->extractMode,	0,						VARNUM_extractMode);
-	CHECK_UNSET(config->knnNumImg,		0,						VARNUM_knnNumImg);
-	CHECK_UNSET(config->splitMethod,	SP_KD_SPLIT_UNKNOWN,	VARNUM_splitMethod);
-	CHECK_UNSET(config->knnNumFeatures,	0,						VARNUM_knnNumFeatures);
-	CHECK_UNSET(config->useMinGUI,		0,						VARNUM_useMinGUI);
-	CHECK_UNSET(config->logLvl,			0,						VARNUM_logLvl);
-	CHECK_UNSET(config->logFile,		NULL,					VARNUM_logFile);
-	return -1;
-}
-
 char* spConfigGetImgDir(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	GETTER_BODY(config->imgDir, NULL);
@@ -226,7 +137,7 @@ int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg)
 	GETTER_BODY(config->knnNumImg, -1);
 }
 
-SP_KDT_SPLIT spConfgGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg)
+SP_KDT_SPLIT spConfigGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	GETTER_BODY(config->splitMethod, SP_KD_SPLIT_UNKNOWN);
 }

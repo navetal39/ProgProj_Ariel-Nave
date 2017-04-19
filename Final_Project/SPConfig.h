@@ -37,10 +37,6 @@
 		*msg = SP_CONFIG_SUCCESS;\
 		return (toGet);\
 	}while(0);
-#define CFG_SET(toSet, value) do{\
-		(toSet) = (value);\
-	}while(0);
-#define CHECK_UNSET(t, uv, rn) if((t)==(uv)){return rn;}
 #define CHECK_AND_FREE(v) if((v)!=NULL) free((v));
 /**
  * A data-structure which is used for configuring the system.
@@ -89,14 +85,6 @@ typedef struct sp_config_t* SPConfig;
  *
  */
 SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg);
-
-void spConfigInitDefaults(SPConfig config);
-
-int spConfigGetUnset(SPConfig config);
-
-
-
-bool spConfigSetValue(SPConfig config, char* var, char* val);
 
 char* spConfigGetImgDir(const SPConfig config, SP_CONFIG_MSG* msg);
 
@@ -162,7 +150,7 @@ bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg);
 
 int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg);
 
-SP_KDT_SPLIT spConfgGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg);
+SP_KDT_SPLIT spConfigGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg);
 
 int spConfigGetNumOfSimilarFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
 
