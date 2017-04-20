@@ -8,15 +8,21 @@
 #define MAX_LINE_SIZE 1024 /* may be assumed according to the forum */
 #define READ_MODE "r"
 #define NULL_CHAR '\0'
+#define NEG_CHAR '-'
 #define WHITESPACE_STR " \f\n\r\t\v"
 #define SET_CHAR '='
 #define SET_CHAR_STR "="
 #define COMMENT_CHAR '#'
+#define TRUE_STR "true"
+#define FALSE_STR "false"
+#define SPLIT_STR_RND "RANDOM"
+#define SPLIT_STR_MAX "MAX_SPREAD"
+#define SPLIT_STR_INC "INCREMENTAL"
 /* Error messagesL */
-#define ERR_MSG_INVALID_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line"
-#define ERR_MSG_INVALID_VAL "File: %s\nLine: %d\nMessage: Invalid value - constraint not met"
-#define ERR_MSG_UNSET_PARAM "File: %s\nLine: %d\nMessage: Parameter %s is not set"
-#define ERR_MSG_OPEN_CFG_FILE "The %s configuration file %s couldn't be open"
+#define ERR_MSG_INVALID_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line\n"
+#define ERR_MSG_INVALID_VAL "File: %s\nLine: %d\nMessage: Invalid value - constraint not met\n"
+#define ERR_MSG_UNSET_PARAM "File: %s\nLine: %d\nMessage: Parameter %s is not set\n"
+#define ERR_MSG_OPEN_CFG_FILE "The %sconfiguration file %s couldn't be open\n"
 #define ERR_MSG_PART_DEFAULT "default "
 #define ERR_MSG_PART_NON_DEFAULT ""
 /* Default values: */
@@ -32,6 +38,21 @@
 #define DEFAULT_SPLIT_METHOD SP_KD_SPLIT_MAX_SPREAD
 #define DEFAULT_LOG_LEVEL 3
 #define DEFAULT_LOG_FILE "stdout"
+/* variable names: */
+#define VARN_IMG_DIR "spImagesDirectory"
+#define VARN_IMG_PRE "spImagesPrefix"
+#define VARN_IMG_SUF "spImagesSuffix"
+#define VARN_IMG_NUM "spNumOfImages"
+#define VARN_PCA_DIM "spPCADimension"
+#define VARN_PCA_FIL "spPCAFilename"
+#define VARN_FTR_NUM "spNumOfFeatures"
+#define VARN_EXT_MOD "spExtractionMode"
+#define VARN_SIM_NUM "spNumOfSimilarImages"
+#define VARN_SPL_MTD "spKDTreeSplitMethod"
+#define VARN_KNN_NUM "spKNN"
+#define VARN_MIN_GUI "spMinimalGUI"
+#define VARN_LOG_LVL "spLoggerLevel"
+#define VARN_LOG_FIL "spLoggerFilename"
 /* Macros: */
 #define GETTER_BODY(toGet, bad) do{\
 		if(config == NULL)\
@@ -92,15 +113,26 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg);
 
 void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg);
 
-void spConfigParseAndSet(SPConfig cfg, char* line, int lineNum, SP_CONFIG_MSG* msg);
+void spConfigParseAndSet(SPConfig cfg, char* line, const char* fileName, int lineNum, SP_CONFIG_MSG* msg);
 
 void spConfigParseLine(char* line, char** varName, char** valStr, SP_CONFIG_MSG* msg);
 
+void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* msg);
+
+SP_CONFIG_MSG spConfigCheckAllSet(SPConfig config);
+
+/************************/
+/* Getters and Setters: */
+/************************/
+
 char* spConfigGetImgDir(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetImgDir(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
 
 char* spConfigGetImgPrefix(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetImgPrefix(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
 
 char* spConfigGetImgSuffix(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
 
 /*
  * Returns the number of images set in the configuration file, i.e the value
@@ -115,6 +147,7 @@ char* spConfigGetImgSuffix(const SPConfig config, SP_CONFIG_MSG* msg);
  * - SP_CONFIG_SUCCESS - in case of success
  */
 int spConfigGetNumOfImages(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetNumOfImages(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
 /**
  * Returns the dimension of the PCA. i.e the value of spPCADimension.
@@ -128,8 +161,10 @@ int spConfigGetNumOfImages(const SPConfig config, SP_CONFIG_MSG* msg);
  * - SP_CONFIG_SUCCESS - in case of success
  */
 int spConfigGetPCADim(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetPCADim(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
 char* spConfigGetPCAFile(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetPCAFile(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
 
 /*
  * Returns the number of features to be extracted. i.e the value
@@ -144,6 +179,7 @@ char* spConfigGetPCAFile(const SPConfig config, SP_CONFIG_MSG* msg);
  * - SP_CONFIG_SUCCESS - in case of success
  */
 int spConfigGetNumOfFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetNumOfFeatures(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
 /*
  * Returns true if spExtractionMode = true, false otherwise.
@@ -157,12 +193,16 @@ int spConfigGetNumOfFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
  * - SP_CONFIG_SUCCESS - in case of success
  */
 bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetExtractionMode(const SPConfig config, bool val, SP_CONFIG_MSG* msg);
 
 int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetNumOfSimilarImages(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
 SP_KDT_SPLIT spConfigGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetSplitMethod(const SPConfig config, SP_KDT_SPLIT val, SP_CONFIG_MSG* msg);
 
 int spConfigGetNumOfSimilarFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetNumOfSimilarFeatures(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
 /*
  * Returns true if spMinimalGUI = true, false otherwise.
@@ -176,10 +216,16 @@ int spConfigGetNumOfSimilarFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
  * - SP_CONFIG_SUCCESS - in case of success
  */
 bool spConfigMinimalGui(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetMinimalGui(const SPConfig config, bool val, SP_CONFIG_MSG* msg);
 
 int spConfigGetLogLevel(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetLogLevel(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
 char* spConfigGetLogFile(const SPConfig config, SP_CONFIG_MSG* msg);
+void spConfigSetLogFile(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
+/*******************/
+/* Helping methods */
+/*******************/
 
 /**
  * Given an index 'index' the function stores in imagePath the full path of the
@@ -226,6 +272,12 @@ SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
  *  - SP_CONFIG_SUCCESS - in case of success
  */
 SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config);
+
+/****************************************************/
+/* Methods not related directly to the config file: */
+/****************************************************/
+bool isDecimalNumber(char* str);
+bool isBooleanValue(char* str);
 
 /**
  * Frees all memory resources associate with config. 
