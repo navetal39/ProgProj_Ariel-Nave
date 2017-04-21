@@ -4,9 +4,6 @@
 #include <ctype.h> /* for isdigit */
 #include "SPLogger.h"
 #include "SPConfig.h"
-/* TODO:
- - remove main
- */
 
 struct sp_config_t{
 	char* imgDir;	bool imgDirSet;
@@ -552,37 +549,4 @@ void spConfigDestroy(SPConfig config)
 		free(config->logFile);
 		free(config);
 	}	
-}
-
-int main(int argc, char* argv[])
-{
-	SP_CONFIG_MSG msg;
-	char c1[500], c2[500];
-	SPConfig cfg = spConfigCreate("./trump", &msg);
-	memset(c1, 0, 500);
-	memset (c2, 0, 500);
-	if(msg == SP_CONFIG_SUCCESS)
-	{
-		printf("imgdir: %s\n", cfg->imgDir);
-		printf("imgpre: %s\n", cfg->imgPre);
-		printf("imgsuf: %s\n", cfg->imgSuf);
-		printf("imgnum: %d\n", cfg->imgNum);
-		printf("pcadim: %d\n", cfg->pcaDim); 
-		printf("pcafile: %s\n", cfg->pcaFile);
-		printf("featurenum: %d\n", cfg->featureNum);
-		printf("extmode: %s\n", (cfg->extractMode)?"yes":"no");
-		printf("simimgnum: %d\n", cfg->simImgNum);
-		printf("split: %s\n", (cfg->splitMethod==SP_KD_SPLIT_RANDOM)?"RANDOM":
-			((cfg->splitMethod==SP_KD_SPLIT_MAX_SPREAD)?"MAX":
-				((cfg->splitMethod==SP_KD_SPLIT_INCREMENTAL)?"INC":"???")));
-		printf("knn: %d\n", cfg->knnNum);
-		printf("minigui: %s\n", (cfg->useMinGUI)?"yes":"no");
-		printf("loglbl: %d\n", cfg->logLvl);
-		printf("logfile: %s\n", cfg->logFile);
-		msg = spConfigGetImagePath(c1, cfg, 16);
-		msg = spConfigGetPCAPath(c2, cfg);
-		printf("iii: %s\nppp: %s\n", c1, c2);
-	}
-	spConfigDestroy(cfg);
-	return 0;
 }
