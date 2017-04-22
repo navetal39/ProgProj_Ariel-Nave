@@ -66,6 +66,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		if(!fgets(line, MAX_LINE_SIZE+1, cfgFile))
 		{
 			free(line);
+			printf("fclose ret val: %d\n", fclose(cfgFile));
 			readAll = true;
 			break;
 		}
@@ -74,7 +75,6 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		if(*msg != SP_CONFIG_SUCCESS){ break; }
 		lineNum++;
 	}
-	fclose(cfgFile);
 	if(readAll)
 	{
 		*msg = spConfigCheckAllSet(cfg);
@@ -363,6 +363,7 @@ char* spConfigGetPCAFile(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetPCAFile(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 {
+	free(config->pcaFile);
 	config->pcaFile = val;
 	*msg = SP_CONFIG_SUCCESS;
 }
@@ -460,6 +461,7 @@ char* spConfigGetLogFile(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetLogFile(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 {
+	free(config->logFile);
 	config->logFile = val;
 	*msg = SP_CONFIG_SUCCESS;
 }
@@ -549,4 +551,13 @@ void spConfigDestroy(SPConfig config)
 		free(config->logFile);
 		free(config);
 	}	
+}
+
+int main()
+{
+	SP_CONFIG_MSG m;
+	SPConfig c = spConfigCreate("./trump", &m);
+	printf("here!\n");
+	spConfigDestroy(c);
+	return 0;
 }
