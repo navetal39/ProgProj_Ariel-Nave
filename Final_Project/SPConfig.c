@@ -552,12 +552,3 @@ void spConfigDestroy(SPConfig config)
 		free(config);
 	}	
 }
-
-int main()
-{
-	SP_CONFIG_MSG m;
-	SPConfig c = spConfigCreate("./trump", &m);
-	printf("here!\n");
-	spConfigDestroy(c);
-	return 0;
-}
