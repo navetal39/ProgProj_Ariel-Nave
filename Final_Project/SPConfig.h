@@ -7,6 +7,7 @@
 /* Constants: */
 #define MAX_LINE_SIZE 1024 /* may be assumed according to the forum */
 #define READ_MODE "r"
+#define WRITE_MODE "w"
 #define NULL_CHAR '\0'
 #define NEG_CHAR '-'
 #define WHITESPACE_STR " \f\n\r\t\v"

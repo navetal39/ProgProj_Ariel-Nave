@@ -7,6 +7,7 @@
 Files with unresolved TODO's:
  - main.cpp
  - main_aux.cpp
+ - main_aux.h
  - SPConfig.c
 */
 int main(int argc, char* argv[])

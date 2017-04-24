@@ -1,3 +1,6 @@
+/* TODO add headers for extract mode stuff */
+
+
 #include <cstring>
 extern "C" {
 	#include "SPPoint.h"
@@ -16,11 +19,14 @@ extern "C" {
 #define RET_SUCCESS 0
 #define RET_FAIL -1
 #define QUERY_INDEX 0
-#define MAX_QUERY_LENGTH 1024
-#define SEP_RES ", "
+#define MAX_PATH_LENGTH 1024
 #define SEP_LINE "\n"
 #define TERM_SIGN "<>"
 #define CMD_OPTION_C "-c"
+#define FEATS_FILE_HEAD_T "%f|%f\n"
+#define MAX_FEATS_HEADER_LEN 64
+#define FEATS_FILE_COOR_T "%f|"
+#define FEATS_FILE_SUFFIX ".feats"
 /* Macros */
 #define SHOULD_RUN(qp) strcmp((qp), TERM_SIGN)
 #define ERASE_QUEUE(queue) do{\

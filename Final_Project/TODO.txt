@@ -1,7 +1,7 @@
 TODO:
  - Finish logger
- - Finish config
+ - Implement and test KDTree
+ - Implement extraction and storage of features
+ - Test minGui
  - Finish unit tests
- - Implement KDTree
- - Use imgProc library
- - More stuff
+ - Figure out source of odd error in spConfig
