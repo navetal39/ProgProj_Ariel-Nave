@@ -159,7 +159,7 @@ SPPoint*** extractDatabaseFeaturesF(SPConfig config)
 			/* TODO: print error? */
 			spConfigSetImgSuffix(config, suffixBackUp, &configMsg);
 			/* TODO check message? */
-			return;
+			return NULL;
 		}
 		memset(header, NULL_BYTE, MAX_FEATS_HEADER_LEN);
 		if(fscanf(featsFile, FEATS_FILE_HEAD_T, &len, &dim)<=0){
@@ -187,7 +187,7 @@ SPPoint*** extractDatabaseFeaturesF(SPConfig config)
 	}
 	spConfigSetImgSuffix(config, suffixBackUp, &configMsg);
 	/* TODO check message? */
-	return;
+	return NULL;
 }
 bool storeDatabaseFeaturesF(SPConfig config, SPPoint*** feats, int* lengths)
 {
@@ -209,7 +209,7 @@ bool storeDatabaseFeaturesF(SPConfig config, SPPoint*** feats, int* lengths)
 			/* TODO: print error? */
 			spConfigSetImgSuffix(config, suffixBackUp, &configMsg);
 			/* TODO check message? */
-			return;
+			return false;
 		}
 		dim = spPointGetDimension(feats[i][0]);
 		if(fprintf(FEATS_FILE_HEAD_T, lengths[i], dim)<0){
@@ -229,7 +229,7 @@ bool storeDatabaseFeaturesF(SPConfig config, SPPoint*** feats, int* lengths)
 	}
 	spConfigSetImgSuffix(config, suffixBackUp, &configMsg);
 	/* TODO check message? */
-	return;
+	return true;
 }
 
 void getQueryPath(char* queryPath)
