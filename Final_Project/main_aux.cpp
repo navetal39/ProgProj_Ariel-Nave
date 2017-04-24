@@ -60,13 +60,17 @@ SPPoint** getFeatures(SPConfig config, int* totalLen)
 	SPPoint*** dbFeats;
 	SPPoint** dbFeatsMerged;
 	bool eMode;
-	inum = spConfigGetNumOfImages(config, &configMsg);
+	iNum = spConfigGetNumOfImages(config, &configMsg);
 	/* TODO check message? */
 	emode = spConfigIsExtractionMode(config, &configMsg);
 	/* TODO check message? */
+	if(!(*lengths=(int*)malloc(iNum*sizeof(int))))
+	{
+		return NULL;
+	}
 	if(eMode)
 	{
-		if(!(dbFeats = extractDatabaseFeaturesI(config, &lengths)))
+		if(!(dbFeats = extractDatabaseFeaturesI(config, lengths)))
 		{
 			/* TODO handle error */
 		}
@@ -75,7 +79,7 @@ SPPoint** getFeatures(SPConfig config, int* totalLen)
 			/* TODO handle error */
 		}
 	}else{
-		if(!(dbFeats = extractDatabaseFeaturesF(config)))
+		if(!(dbFeats = extractDatabaseFeaturesF(config, lengths)))
 		{
 			/* TODO handle error */
 		}
@@ -98,7 +102,7 @@ SPPoint** getFeatures(SPConfig config, int* totalLen)
 	free(lengths);
 	return dbFeatsMerged
 }
-SPPoint*** extractDatabaseFeaturesI(SPConfig config, int** dbFeatsLens)
+SPPoint*** extractDatabaseFeaturesI(SPConfig config, int dbFeatsLens[])
 {
 	int i, iNum, j;
 	char imgPath[MAX_PATH_LENGTH+1];
@@ -110,125 +114,159 @@ SPPoint*** extractDatabaseFeaturesI(SPConfig config, int** dbFeatsLens)
 	{
 		return NULL;
 	}
-	if!((*dbFeatsLens=(int*)malloc(iNum*sizeof(int))))
-	{
-		free(dbFeats);
-		return NULL;
-	}
 	for(i=0; i<iNum; i++)
 	{
 		memset(imgPath, NULL_BYTE, MAX_PATH_LENGTH+1);
 		configMsg = spConfigGetImagePath(imgPath, config, i);
 		/* TODO check message? */
-		if(!(dbFeats[i] = getImageFeatures(imgPath, i, *dbFeatsLens+i)))
+		if(!(dbFeats[i] = getImageFeatures(imgPath, i, dbFeatsLens+i)))
 		{
-			for(j=0;j<i;j++)
-			{
-				destroyPointsArray(dbFeats[j]);
-			}
-			free(dbFeats);
-			free(*dbFeatsLens);
-			*dbFeatsLens = NULL;
-			return NULL;
+			destroyPointsArrayArray(dbFeats, i, dbFeatsLens);
+			return NULL
 		}
 	}
 	return dbFeats;
 }
-SPPoint*** extractDatabaseFeaturesF(SPConfig config)
+SPPoint*** extractDatabaseFeaturesF(SPConfig config, int lengths[])
 {
-	int i, iNum, j, k, len, dim;
-	double *curPointVals;
-	char imgPath[MAX_PATH_LENGTH+1], *suffixBackUp, header[MAX_FEATS_HEADER_LEN];
+	SPPoint*** ret;
+	int iNum, i;
 	SP_CONFIG_MSG configMsg;
-	FILE* featsFile;
-	SPPoint ***dbFeats, **curFilePoints;
-	inum = spConfigGetNumOfImages(config, &configMsg);
+	iNum = spConfigGetNumOfImages(config, &configMsg);
 	/* TODO check message? */
-	suffixBackUp = spConfigGetImgSuffix(config, &configMsg);
-	/* TODO check message? */
-	spConfigSetImgSuffix(config, FEATS_FILE_SUFFIX, &configMsg);
-	/* TODO check message? */
-	if(!(dbFeats = (SPPoint***)malloc(iNum*sizeof(SPPoint**)))){
-		/* TODO handle error */
+	if(!(ret=(SPPoint***)malloc(iNum*sizeof(SPPoint**)))){
+		return NULL;
 	}
-	for(i=0; i<iNum; i++){
-		memset(imgPath, NULL_BYTE, MAX_PATH_LENGTH+1);
-		configMsg = spConfigGetImagePath(imgPath, config, i);
-		/* TODO check message? */
-		if(!(featsFile = fopen(filename, READ_MODE))){
-			/* TODO: print error? */
-			spConfigSetImgSuffix(config, suffixBackUp, &configMsg);
-			/* TODO check message? */
+	for(i=0;i<iNum;i++)
+	{
+		if(!(ret[i]=getImageFeaturesF(config, i, lengths+i))){
+			destroyPointsArrayArray(ret, i, lengths);
 			return NULL;
 		}
-		memset(header, NULL_BYTE, MAX_FEATS_HEADER_LEN);
-		if(fscanf(featsFile, FEATS_FILE_HEAD_T, &len, &dim)<=0){
-			/* TODO handle error */
-		}
-		if(!(curFilePoints = (SPPoint**)malloc(len*sizeof(SPPoint*)))){
-			/* TODO handle error */
-		}
-		for(j=0;j<len;j++){
-			if(!(*curPointVals = (int*)malloc(dim*sizeof(double)))){
-				/* TODO handle error */
-			}
-			for(k=0; k<dim;k++){
-				if(fscanf(featsFile, FEATS_FILE_COOR_T, curPointVals+k)<=0){
-					/* TODO handle error */
-				}
-			}
-			if(!(curFilePoints[j] = spPointCreate(curPointVals, dim, i))){
-				/* TODO handle error */
-			}
-			free(curPointVals);
-		}
-		dbFeats[i] = curFilePoints;
-		fclose(filename);
 	}
-	spConfigSetImgSuffix(config, suffixBackUp, &configMsg);
-	/* TODO check message? */
-	return NULL;
+	return ret;
 }
-bool storeDatabaseFeaturesF(SPConfig config, SPPoint*** feats, int* lengths)
+SPPoint** getImageFeaturesF(SPConfig config, int index, int* length)
 {
-	int i, iNum, j, k, dim;
-	char imgPath[MAX_PATH_LENGTH+1], *suffixBackUp;
+	SPPoint** ret;
+	int i, toRead[2], dim;
+	char filePath[MAX_PATH_LENGTH+1], *sufBackup;
 	SP_CONFIG_MSG configMsg;
-	FILE* featsFile;
-	inum = spConfigGetNumOfImages(config, &configMsg);
+	FILE* file;
+
+	sufBackup = spConfigGetImgSuffix(config, &configMsg);
 	/* TODO check message? */
-	suffixBackUp = spConfigGetImgSuffix(config, &configMsg);
+	spConfigSetImgSuffix(config, FEATS_FILE_SUFFIX, &configMsg)
 	/* TODO check message? */
-	spConfigSetImgSuffix(config, FEATS_FILE_SUFFIX, &configMsg);
+	spConfigGetImagePath(filePath, config, index);
+	spConfigSetImgSuffix(config, sufBackup, &configMsg)
 	/* TODO check message? */
-	for(i=0; i<iNum; i++){
-		memset(imgPath, NULL_BYTE, MAX_PATH_LENGTH+1);
-		configMsg = spConfigGetImagePath(imgPath, config, i);
-		/* TODO check message? */
-		if(!(featsFile = fopen(filename, WRITE_MODE))){
-			/* TODO: print error? */
-			spConfigSetImgSuffix(config, suffixBackUp, &configMsg);
-			/* TODO check message? */
+
+	if(!(file=(fopen(filePath, READ_MODE)))){
+		return NULL;
+	}
+	if(fread((void*)toRead, sizeof(int), 2, file)<2){
+		fclose(file);
+		return NULL;
+	}
+	*length = toRead[0]; dim = toRead[1];
+	if(!(ret = (SPPoint**)malloc(*length*sizeof(SPPoint*)))){
+		fclose(file);
+		return NULL;
+	}
+	for(i=0;i<*length;i++)
+	{
+		if(!(ret[i]=(getImageFeatureF(file, dim, index)))){
+			destroyPointsArray(ret, i);
+			fclose(file);
+			return NULL;
+		}
+	}
+	fclose(file);
+	return ret;
+}
+SPPoint* getImageFeatureF(FILE* file, int dim, int index)
+{
+	SPPoint* ret;
+	int i;
+	double *tempArr;
+	if(!(tempArr = (double*)malloc(dim*sizeof(double))))
+	{
+		return NULL;
+	}
+	if(fread((void*)tempArr, sizeof(double),dim,file)<dim){
+		free(tempArr);
+		return NULL;
+	}
+	ret = spPointCreate(tempArr, dim, index);
+	free(tempArr);
+	return ret;
+}
+bool storeDatabaseFeaturesF(SPConfig config, SPPoint* feats[][], int lengths[])
+{
+	int iNum, i;
+	SP_CONFIG_MSG configMsg;
+	iNum = spConfigGetNumOfImages(config, &configMsg);
+	/* TODO check message? */
+	for(i=0;i<iNum;i++)
+	{
+		if(!storeImageFeaturesF(config, feats[i], length[i])){
 			return false;
 		}
-		dim = spPointGetDimension(feats[i][0]);
-		if(fprintf(FEATS_FILE_HEAD_T, lengths[i], dim)<0){
-			/* TODO handle error */
-		}
-		for(j=0;j<lengths[i];j++){
-			for(k=0; k<dim;k++){
-				if(fprintf(FEATS_FILE_COOR_T, spPointGetAxisCoor(feats[i][j],k))<0){
-					/* TODO handle error */
-				}
-			}
-			if(fprintf(SEP_LINE)<0){
-				/* TODO handle error */
-			}
-		}
-		fclose(filename);
 	}
-	spConfigSetImgSuffix(config, suffixBackUp, &configMsg);
+	return true;
+}
+bool storeImageFeaturesF(SPConfig config, SPPoint* feats[], int length)
+{
+	int i, index, toWrite[2];
+	char filePath[MAX_PATH_LENGTH+1], *sufBackup;
+	SP_CONFIG_MSG configMsg;
+	FILE* file;
+
+	toWrite[0]=lengths; toWrite[1]=dim;
+	index = spPointGetIndex(feats[0]);
+	sufBackup = spConfigGetImgSuffix(config, &configMsg);
 	/* TODO check message? */
+	spConfigSetImgSuffix(config, FEATS_FILE_SUFFIX, &configMsg)
+	/* TODO check message? */
+	spConfigGetImagePath(filePath, config, index);
+	spConfigSetImgSuffix(config, sufBackup, &configMsg)
+	/* TODO check message? */
+
+	if(!(file=(fopen(filePath, WRITE_MODE)))){
+		return false;
+	}
+	if(fwrite((void*)toWrite, sizeof(int), 2, file)<2){
+		fclose(file);
+		return false;
+	}
+	for(i=0;i<length;i++)
+	{
+		if(!(storeImageFeatureF(file, feats[i]))){
+			fclose(file);
+			return false;
+		}
+	}
+	fclose(file);
+	return true;
+}
+bool storeImageFeatureF(FILE* file, SPPoint* feature)
+{
+	int i, dim;
+	double *tempArr;
+	dim = spPointGetDimension(feature);
+	if(!(tempArr = (double*)malloc(dim*sizeof(double)))){
+		return false;
+	}
+	for(i=0;i<dim;i++)
+	{
+		tempArr[i] = spPointGetAxisCoor(feature, i);
+	}
+	if(fwrite((void*)tempArr, sizeof(double), dim, file)<dim){
+		free(tempArr);
+		return false;
+	}
+	free(tempArr);
 	return true;
 }
 
@@ -278,11 +316,10 @@ void destroyPointsArray(SPPoint** pointArray, int arrayLength)
 void destroyPointsArrayArray(SPPoint*** arraysArray, int arrayLength,
 							int isFeaturesArrays, int* varyingLengths)
 {
-	int i, len;
+	int i;
 	for(i = 0; i<arrayLength; i++)
 	{
-		len = (isFeaturesArrays)?varyingLengths[i]:COLOR_NUM;
-		destroyPointsArray(arraysArray[i], len);
+		destroyPointsArray(arraysArray[i], varyingLengths[i]);
 	}
 	free(arraysArray);
 }
