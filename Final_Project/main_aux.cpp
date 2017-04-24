@@ -53,7 +53,7 @@ SP_LOGGER_MSG initLog(SPConfig config)
 
 }
 
-SPPoint** getFeatures(SPConfig config, int* toatalFeatsNum)
+SPPoint** getFeatures(SPConfig config, int* totalLen)
 {	
 	int iNum, *lengths, i, j, c;
 	SP_CONFIG_MSG configMsg;
@@ -85,6 +85,7 @@ SPPoint** getFeatures(SPConfig config, int* toatalFeatsNum)
 	{
 		*totalLen+=lengths[i];
 	}
+	c=0;
 	for(i=0; i<iNum; i++)
 	{
 		for(j=0; i<lengths[i]; j++)
