@@ -3,23 +3,26 @@
 #include <cstring>
 #include "main_aux.h"
 extern "C" {
-	#include "spConfig.h"
+	#include "SPConfig.h"
 	#include "SPBPriorityQueue.h"
 }
 
+using namespace sp;
 int scoreComp(const void* x, const void* y)
 {
 	return (((siftScore*)y)->score-((siftScore*)x)->score);
 }
 
-SPConfig initConfig(char* cfgPath)
+SPConfig initConfig(const char* cfgPath)
 {
 	SP_CONFIG_MSG configMsg;
 	SPConfig cfg;
 	cfg = spConfigCreate(cfgPath, &configMsg);
 	if(configMsg == SP_CONFIG_CANNOT_OPEN_FILE)
 	{
-		printf(ERR_CFG_OPEN, (argc>1)?ERR_CFG_OPEN_D:ERR_CFG_OPEN_C, cfgFileName);
+		printf(ERR_CFG_OPEN, (!strcmp(cfgPath, DEF_CFG_FILE))
+			?ERR_CFG_OPEN_D
+			:ERR_CFG_OPEN_C, cfgPath);
 	}
 	return cfg;
 }
@@ -28,10 +31,13 @@ SP_LOGGER_MSG initLog(SPConfig config)
 	int lvlInt;
 	char* filePath;
 	SP_CONFIG_MSG configMsg;
-	SP_LOGGER_LEVEL lvl = NULL;
+	SP_LOGGER_LEVEL lvl;
 	lvlInt = spConfigGetLogLevel(config, &configMsg);
 	filePath = spConfigGetLogFile(config, &configMsg);
-	switch lvlInt
+	if(!(strcmp(filePath, DEFAULT_LOG_FILE))){
+		filePath = NULL;
+	}
+	switch(lvlInt)
 	{
 		case 1:
 			lvl = SP_LOGGER_ERROR_LEVEL;
@@ -53,24 +59,20 @@ SP_LOGGER_MSG initLog(SPConfig config)
 
 }
 
-SPPoint** getFeatures(SPConfig config, int* totalLen)
+SPPoint** getFeatures(SPConfig config, ImageProc* imPr, int* totalLen)
 {	
-	int iNum, *lengths, i, j, c;
+	int iNum, *lengths = NULL, i, j, c;
 	SP_CONFIG_MSG configMsg;
 	SPPoint*** dbFeats;
-	SPPoint** dbFeatsMerged;
+	SPPoint** dbFeatsMerged = NULL;
 	bool eMode;
 	iNum = spConfigGetNumOfImages(config, &configMsg);
 	/* TODO check message? */
-	emode = spConfigIsExtractionMode(config, &configMsg);
+	eMode = spConfigIsExtractionMode(config, &configMsg);
 	/* TODO check message? */
-	if(!(*lengths=(int*)malloc(iNum*sizeof(int))))
-	{
-		return NULL;
-	}
 	if(eMode)
 	{
-		if(!(dbFeats = extractDatabaseFeaturesI(config, lengths)))
+		if(!(dbFeats = extractDatabaseFeaturesI(config, imPr, lengths)))
 		{
 			/* TODO handle error */
 		}
@@ -100,29 +102,29 @@ SPPoint** getFeatures(SPConfig config, int* totalLen)
 		c++;
 	}
 	free(lengths);
-	return dbFeatsMerged
+	return dbFeatsMerged;
 }
-SPPoint*** extractDatabaseFeaturesI(SPConfig config, int dbFeatsLens[])
+SPPoint*** extractDatabaseFeaturesI(SPConfig config, ImageProc* imPr, int dbFeatsLens[])
 {
-	int i, iNum, j;
+	int i, iNum;
 	char imgPath[MAX_PATH_LENGTH+1];
 	SP_CONFIG_MSG configMsg;
 	SPPoint*** dbFeats;
-	inum = spConfigGetNumOfImages(config, &configMsg);
+	iNum = spConfigGetNumOfImages(config, &configMsg);
 	/* TODO check message? */
-	if!((dbFeats=(SPPoint***)malloc(iNum*sizeof(SPPoint**))))
+	if(!(dbFeats=(SPPoint***)malloc(iNum*sizeof(SPPoint**))))
 	{
 		return NULL;
 	}
 	for(i=0; i<iNum; i++)
 	{
-		memset(imgPath, NULL_BYTE, MAX_PATH_LENGTH+1);
+		memset(imgPath, NULL_CHAR, MAX_PATH_LENGTH+1);
 		configMsg = spConfigGetImagePath(imgPath, config, i);
 		/* TODO check message? */
-		if(!(dbFeats[i] = getImageFeatures(imgPath, i, dbFeatsLens+i)))
+		if(!(dbFeats[i] = imPr->getImageFeatures(imgPath, i, dbFeatsLens+i)))
 		{
 			destroyPointsArrayArray(dbFeats, i, dbFeatsLens);
-			return NULL
+			return NULL;
 		}
 	}
 	return dbFeats;
@@ -150,17 +152,20 @@ SPPoint** getImageFeaturesF(SPConfig config, int index, int* length)
 {
 	SPPoint** ret;
 	int i, toRead[2], dim;
-	char filePath[MAX_PATH_LENGTH+1], *sufBackup;
+	char filePath[MAX_PATH_LENGTH+1], *sufNew, *sufBackup;
 	SP_CONFIG_MSG configMsg;
 	FILE* file;
 
+	sufNew = (char*)malloc(strlen(FEATS_FILE_SUFFIX)*sizeof(char)+1);
+	strcpy(sufNew, FEATS_FILE_SUFFIX);
 	sufBackup = spConfigGetImgSuffix(config, &configMsg);
 	/* TODO check message? */
-	spConfigSetImgSuffix(config, FEATS_FILE_SUFFIX, &configMsg)
+	spConfigSetImgSuffix(config, sufNew, &configMsg);
 	/* TODO check message? */
 	spConfigGetImagePath(filePath, config, index);
-	spConfigSetImgSuffix(config, sufBackup, &configMsg)
+	spConfigSetImgSuffix(config, sufBackup, &configMsg);
 	/* TODO check message? */
+	free(sufNew);
 
 	if(!(file=(fopen(filePath, READ_MODE)))){
 		return NULL;
@@ -188,13 +193,12 @@ SPPoint** getImageFeaturesF(SPConfig config, int index, int* length)
 SPPoint* getImageFeatureF(FILE* file, int dim, int index)
 {
 	SPPoint* ret;
-	int i;
 	double *tempArr;
 	if(!(tempArr = (double*)malloc(dim*sizeof(double))))
 	{
 		return NULL;
 	}
-	if(fread((void*)tempArr, sizeof(double),dim,file)<dim){
+	if(fread((void*)tempArr, sizeof(double),dim,file)<(size_t)dim){
 		free(tempArr);
 		return NULL;
 	}
@@ -202,7 +206,7 @@ SPPoint* getImageFeatureF(FILE* file, int dim, int index)
 	free(tempArr);
 	return ret;
 }
-bool storeDatabaseFeaturesF(SPConfig config, SPPoint* feats[][], int lengths[])
+bool storeDatabaseFeaturesF(SPConfig config, SPPoint** feats[], int lengths[])
 {
 	int iNum, i;
 	SP_CONFIG_MSG configMsg;
@@ -210,7 +214,7 @@ bool storeDatabaseFeaturesF(SPConfig config, SPPoint* feats[][], int lengths[])
 	/* TODO check message? */
 	for(i=0;i<iNum;i++)
 	{
-		if(!storeImageFeaturesF(config, feats[i], length[i])){
+		if(!storeImageFeaturesF(config, feats[i], lengths[i])){
 			return false;
 		}
 	}
@@ -218,20 +222,25 @@ bool storeDatabaseFeaturesF(SPConfig config, SPPoint* feats[][], int lengths[])
 }
 bool storeImageFeaturesF(SPConfig config, SPPoint* feats[], int length)
 {
-	int i, index, toWrite[2];
-	char filePath[MAX_PATH_LENGTH+1], *sufBackup;
+	int i, index, toWrite[2], dim;
+	char filePath[MAX_PATH_LENGTH+1], *sufNew, *sufBackup;
 	SP_CONFIG_MSG configMsg;
 	FILE* file;
 
-	toWrite[0]=lengths; toWrite[1]=dim;
+	dim = spPointGetDimension(feats[0]);
+	toWrite[0]=length; toWrite[1]=dim;
 	index = spPointGetIndex(feats[0]);
+
+	sufNew = (char*)malloc(strlen(FEATS_FILE_SUFFIX)*sizeof(char)+1);
+	strcpy(sufNew, FEATS_FILE_SUFFIX);
 	sufBackup = spConfigGetImgSuffix(config, &configMsg);
 	/* TODO check message? */
-	spConfigSetImgSuffix(config, FEATS_FILE_SUFFIX, &configMsg)
+	spConfigSetImgSuffix(config, sufNew, &configMsg);
 	/* TODO check message? */
 	spConfigGetImagePath(filePath, config, index);
-	spConfigSetImgSuffix(config, sufBackup, &configMsg)
+	spConfigSetImgSuffix(config, sufBackup, &configMsg);
 	/* TODO check message? */
+	free(sufNew);
 
 	if(!(file=(fopen(filePath, WRITE_MODE)))){
 		return false;
@@ -262,7 +271,7 @@ bool storeImageFeatureF(FILE* file, SPPoint* feature)
 	{
 		tempArr[i] = spPointGetAxisCoor(feature, i);
 	}
-	if(fwrite((void*)tempArr, sizeof(double), dim, file)<dim){
+	if(fwrite((void*)tempArr, sizeof(double), dim, file)<(size_t)dim){
 		free(tempArr);
 		return false;
 	}
@@ -272,13 +281,13 @@ bool storeImageFeatureF(FILE* file, SPPoint* feature)
 
 void getQueryPath(char* queryPath)
 {
-	printf(INST_QUERY_OR_TERM);
+	printf(INST_QUERY);
 	/* Anything after strlen should already be 0: */
 	memset(queryPath, NULL_CHAR, strlen(queryPath));
 	READ_STR(queryPath);
 }
 
-void printNearestIndexes(SPConfig config, int* indexes)
+void printNearestIndexes(SPConfig config, ImageProc* imPr, char* qPath, int* indexes)
 {
 	SP_CONFIG_MSG configMsg;
 	char bestPath[MAX_PATH_LENGTH+1];
@@ -286,16 +295,16 @@ void printNearestIndexes(SPConfig config, int* indexes)
 	/* TODO check message? */
 	if(!useMinGui)
 	{
-		printf(OUT_TITLE);
+		printf(OUT_TITLE, qPath);
 	}
 	while(*indexes>=0)
 	{
-		memset(bestPath, NULL_BYTE, MAX_PATH_LENGTH+1);
+		memset(bestPath, NULL_CHAR, MAX_PATH_LENGTH+1);
 		configMsg = spConfigGetImagePath(bestPath, config, *indexes);
 		/* TODO check message? */
 		if(useMinGui)
 		{
-			showImage(bestPath);
+		imPr->showImage(bestPath);
 		}else{
 			printf("%s\n", bestPath);
 		}
@@ -314,7 +323,7 @@ void destroyPointsArray(SPPoint** pointArray, int arrayLength)
 }
 
 void destroyPointsArrayArray(SPPoint*** arraysArray, int arrayLength,
-							int isFeaturesArrays, int* varyingLengths)
+							int* varyingLengths)
 {
 	int i;
 	for(i = 0; i<arrayLength; i++)

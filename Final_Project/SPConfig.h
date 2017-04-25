@@ -14,12 +14,19 @@
 #define SET_CHAR '='
 #define SET_CHAR_STR "="
 #define COMMENT_CHAR '#'
+/* Allowed values: */
 #define TRUE_STR "true"
 #define FALSE_STR "false"
+
 #define SPLIT_STR_RND "RANDOM"
 #define SPLIT_STR_MAX "MAX_SPREAD"
 #define SPLIT_STR_INC "INCREMENTAL"
-/* Error messagesL */
+
+#define SUF_STR_JPG ".jpg"
+#define SUF_STR_PNG ".png"
+#define SUF_STR_BMP ".bmp"
+#define SUF_STR_GIF ".gif"
+/* Error messages: */
 #define ERR_MSG_INVALID_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line\n"
 #define ERR_MSG_INVALID_VAL "File: %s\nLine: %d\nMessage: Invalid value - constraint not met\n"
 #define ERR_MSG_UNSET_PARAM "File: %s\nLine: %d\nMessage: Parameter %s is not set\n"

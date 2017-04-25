@@ -1,17 +1,16 @@
-/* TODO add headers for extract mode stuff */
-
-
 #include <cstring>
+#include "SPImageProc.h"
 extern "C" {
 	#include "SPPoint.h"
 	#include "SPConfig.h"
 }
-/* Error messages and instructions */
+/* Messages */
 #define ERR_CMD_ARGS "Invalid command line: use -c <config_filename>\n"
 #define ERR_CFG_OPEN "The%sconfiguration file %s couldn't be open\n"
 #define ERR_CFG_OPEN_D " default "
 #define ERR_CFG_OPEN_C " "
 #define INST_QUERY "Please enter an image path:\n"
+#define MSG_EXIT "Exiting...\n"
 #define OUT_TITLE "Best candidates for - %s - are:\n"
 /* Defaults */
 #define DEF_CFG_FILE "spcbir.config"
@@ -50,8 +49,8 @@ typedef struct sp_img_sift_score{
 int scoreComp(const void* x, const void* y);
 
 /**
- * Given a path to a configuration file, this method will initialize a config struct from the data
- * read from said file.
+ * Given a path to a configuration file and a boolean flag this method will initialize a config struct
+ * from the data read from said file.
  * if the configuration file couldn't be opened, the function prints an error message. Additionally,
  * error messages may be printed from inside the diffrent spConfig methods used to initialize the struct.
  * 
@@ -61,7 +60,7 @@ int scoreComp(const void* x, const void* y);
  * An initialized SPConfig struct with all the system configuration variables set according to the data in the
  * given file, or NULL if an error occured.
  */
-SPConfig initConfig(char* cfgPath);
+SPConfig initConfig(const char* cfgPath);
 
 /**
  * Given a valid configuration SPConfig struct, the method will attempt to initialize the logger using the
@@ -87,11 +86,11 @@ SP_LOGGER_MSG initLog(SPConfig config);
  * NULL if an error occured or an array of SPPoint*s that represent the extracted features, with the point's indexes
  * matching the image they have been extracted from.
  */
-SPPoint** getFeatures(SPConfig config, int* totalLen);
+SPPoint** getFeatures(SPConfig config, sp::ImageProc* imPr, int* totalLen);
 
 /**
- * Given a valid configuration SPConfig struct and an array of integers, the method will extract all features of
- * all the images (ACTUAL IMAGES) in the images folder (num. of images, folder name and naming format is all
+ * Given a valid configuration SPConfig struct, an image processor object and an array of integers, the method will extract
+ * all features of all the images (ACTUAL IMAGES) in the images folder (num. of images, folder name and naming format is all
  * given by the config file) and return an array of arrays containing them, such that each array in the returned array
  * holds all the features of the image of the same index. The lengths of each of the "child arrays" are stored in the
  * matching indexes in the array that is the 2nd argument
@@ -103,11 +102,11 @@ SPPoint** getFeatures(SPConfig config, int* totalLen);
  * NULL if an error occured or an array of arrays of SPPoint*s that represent the extracted features, with the point's indexes
  * matching the image they have been extracted from, and each array is stored in that same index in the big array.
  */
-SPPoint*** extractDatabaseFeaturesI(SPConfig config, int dbFeatsLens[]);
+SPPoint*** extractDatabaseFeaturesI(SPConfig config, sp::ImageProc* imPr, int dbFeatsLens[]);
 
 /**
- * Given a valid configuration SPConfig struct and an array of integers, the method will extract all features of
- * all the images (FROM .feats FILES) in the images folder (num. of images, folder name and naming format is all
+ * Given a valid configuration SPConfig struct, an image processor object and an array of integers, the method will extract
+ * all features of all the images (FROM .feats FILES) in the images folder (num. of images, folder name and naming format is all
  * given by the config file) and return an array of arrays containing them, such that each array in the returned array
  * holds all the features of the image of the same index. The lengths of each of the "child arrays" are stored in the
  * matching indexes in the array that is the 2nd argument
@@ -148,7 +147,7 @@ SPPoint** getImageFeaturesF(SPConfig config, int index, int* length);
  * return
  * NULL if an error occured, or a pointer to SPPoint representing the extracted feature.
  */
-SPPoint* getImageFeatureF(FILE* file, int dim, int index)
+SPPoint* getImageFeatureF(FILE* file, int dim, int index);
 
 /**
  * Given a valid configuration SPConfig struct, an array of arrays of features and an array of integers, the method will
@@ -164,7 +163,7 @@ SPPoint* getImageFeatureF(FILE* file, int dim, int index)
  * return
  * false if an error occured, true otherwise.
  */
-bool storeDatabaseFeaturesF(SPConfig config, SPPoint* feats[][], int lengths[]);
+bool storeDatabaseFeaturesF(SPConfig config, SPPoint** feats[], int lengths[]);
 
 /**
  * Given a valid configuration SPConfig struct, an arrays of features and an integer, the method will * store the all the featuresin one 
@@ -202,14 +201,16 @@ bool storeImageFeatureF(FILE* file, SPPoint* feature);
 void getQueryPath(char* queryPath);
 
 /**
- * Given a valid configuration SPConfig struct and an array of non-negative integers terminated with -1, the method
- * will display the images who's indexes are in the integer array, or print their paths, in the order at which they are
- * listed in the array. The output type depends on the information inside the SPConfig object.
+ * Given a valid configuration SPConfig struct, an image processor object, a string representing a path and an array
+ * of non-negative integers terminated with -1, the method will display the images who's indexes are in the integer array,
+ * or print their paths, in the order at which they arelisted in the array. The output type depends on the information
+ * inside the SPConfig object.
+ * The 2nd argument is used for the 1st line printed (if minimal GUI is turned off) which serves as a "title"
  * 
  * @param config - a valid SPConfig object
  * @param indexes[] - an array of integers, all of which's members are non-negative except for the last one, which is -1.
  */
-void printNearestIndexes(SPConfig config, int* indexes);
+void printNearestIndexes(SPConfig config, sp::ImageProc* imPr, char* qPath, int* indexes);
 
 /**
  * Destroys all the points pointed at by a pointer in the array of point pointers "pointArray",
@@ -238,6 +239,6 @@ void destroyPointsArray(SPPoint** pointArray, int arrayLength);
  * 
  * @param arraysArray - the array of arrays of pointers to the points to be destroyed
  * @param arraylength - the length of the array array
- * @param arraysLengths - if isFeaturesArray == 1, arraysLengths should contain the lengths of the features arrays.
+ * @param arraysLengths - contains the respective lengths of the features arrays.
  */
 void destroyPointsArrayArray(SPPoint*** arraysArray, int arrayLength, int* arraysLengths);

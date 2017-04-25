@@ -49,3 +49,70 @@ void spLoggerDestroy() {
 	free(logger);//free allocation
 	logger = NULL;
 }
+
+SP_LOGGER_MSG spLoggerPrintError(const char* msg, const char* file,
+		const char* function, const int line)
+{
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_TTL_F, LOG_MSG_TTL_ERR);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_FIL, file);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_FNC, function);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_LIN, line);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_MSG, msg);
+	return SP_LOGGER_SUCCESS;
+}
+
+SP_LOGGER_MSG spLoggerPrintWarning(const char* msg, const char* file,
+		const char* function, const int line)
+{
+	if(!logger) { return SP_LOGGER_UNDIFINED; }
+	if(!msg) { return SP_LOGGER_INVAlID_ARGUMENT; }
+	if(logger->level == SP_LOGGER_ERROR_LEVEL)
+	{
+		return SP_LOGGER_SUCCESS; 
+	}	
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_TTL_F, LOG_MSG_TTL_WRN);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_FIL, file);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_FNC, function);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_LIN, line);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_MSG, msg);
+	return SP_LOGGER_SUCCESS;
+}
+
+SP_LOGGER_MSG spLoggerPrintInfo(const char* msg)
+{
+	if(!logger) { return SP_LOGGER_UNDIFINED; }
+	if(!msg) { return SP_LOGGER_INVAlID_ARGUMENT; }
+	if(logger->level == SP_LOGGER_ERROR_LEVEL ||
+		logger->level == SP_LOGGER_WARNING_ERROR_LEVEL)
+	{
+		return SP_LOGGER_SUCCESS; 
+	}	
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_TTL_F, LOG_MSG_TTL_INF);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_MSG, msg);
+	return SP_LOGGER_SUCCESS;
+}
+
+SP_LOGGER_MSG spLoggerPrintDebug(const char* msg, const char* file,
+		const char* function, const int line)
+{
+	if(!logger) { return SP_LOGGER_UNDIFINED; }
+	if(!msg) { return SP_LOGGER_INVAlID_ARGUMENT; }
+	if(logger->level != SP_LOGGER_DEBUG_INFO_WARNING_ERROR_LEVEL)
+	{
+		return SP_LOGGER_SUCCESS;
+	}	
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_TTL_F, LOG_MSG_TTL_DBG);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_FIL, file);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_FNC, function);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_LIN, line);
+	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_MSG, msg);
+	return SP_LOGGER_SUCCESS;
+}
+
+SP_LOGGER_MSG spLoggerPrintMsg(const char* msg)
+{
+	if(!logger) { return SP_LOGGER_UNDIFINED; }
+	if(!msg) { return SP_LOGGER_INVAlID_ARGUMENT; }
+	FPRINTF_AND_CHECK(logger->outputChannel, "%s\n", msg);
+	return SP_LOGGER_SUCCESS;
+}

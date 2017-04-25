@@ -1,5 +1,20 @@
 #ifndef SPLOGGER_H_
 #define SPLOGGER_H_
+
+
+#define LOG_MSG_TTL_F "---%s---\n"
+#define LOG_MSG_TTL_ERR "ERROR"
+#define LOG_MSG_TTL_WRN "WARNING"
+#define LOG_MSG_TTL_INF "INFO"
+#define LOG_MSG_TTL_DBG "DEBUG"
+#define LOG_MSG_FLD_FIL "file: %s\n"
+#define LOG_MSG_FLD_FNC "function: %s\n"
+#define LOG_MSG_FLD_LIN "line: %d\n"
+#define LOG_MSG_FLD_MSG "message: %s\n"
+#define NUM_BUFFER_SIZE 16
+
+#define FPRINTF_AND_CHECK(c, f, a) if(fprintf((c), (f), (a))<0){ return SP_LOGGER_WRITE_FAIL; }
+
 /**
  * SP Logger summary:
  * SP Logger is defined at compilation time and it must be initialized
@@ -71,7 +86,7 @@ void spLoggerDestroy();
 
 /**
  * 	Prints error message. The error message format is given below:
- * 	---ERROR---
+ * 	ERROR
  * 	- file: <file>
  *  - function: <function>
  *  - line: <line>
@@ -109,7 +124,7 @@ SP_LOGGER_MSG spLoggerPrintError(const char* msg, const char* file,
 
 /**
  * 	Prints warning message. The warning message format is given below:
- * 	---WARNING---
+ * 	WARNING
  * 	- file: <file>
  *  - function: <function>
  *  - line: <line>
@@ -145,7 +160,7 @@ SP_LOGGER_MSG spLoggerPrintWarning(const char* msg, const char* file,
 		const char* function, const int line);
 /**
  * 	Prints Info message. The info message format is given below:
- * 	---INFO---
+ * 	INFO
  *  - message: <msg>
  *
  * 	<msg> 	   - is the string given by msg, it contains the msg given by the user
@@ -168,7 +183,7 @@ SP_LOGGER_MSG spLoggerPrintInfo(const char* msg);
 
 /**
  * 	Prints the debug message. The debug message format is given below:
- * 	---DEBUG---
+ * 	DEBUG
  * 	- file: <file>
  *  - function: <function>
  *  - line: <line>

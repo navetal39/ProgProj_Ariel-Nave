@@ -29,7 +29,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 {
 	FILE* cfgFile;
 	SPConfig cfg = NULL;
-	int success, lineNum = 0;
+	int lineNum = 0;
 	char *line, *missing = NULL;
 	bool readAll = false;
 	if(!filename)
@@ -66,7 +66,6 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		if(!fgets(line, MAX_LINE_SIZE+1, cfgFile))
 		{
 			free(line);
-			printf("fclose ret val: %d\n", fclose(cfgFile));
 			readAll = true;
 			break;
 		}
@@ -94,11 +93,16 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 				case SP_CONFIG_MISSING_NUM_IMAGES:
 					missing = VARN_IMG_NUM;
 					break;
+				default:
+					break;
 			}
 			printf(ERR_MSG_UNSET_PARAM, filename, lineNum, missing);
 			spConfigDestroy(cfg);
 			return NULL;
 		}
+	}else{
+		spConfigDestroy(cfg); 
+		return NULL;
 	}
 	return cfg;
 }
@@ -143,6 +147,10 @@ void spConfigParseAndSet(SPConfig cfg, char* line, const char* fileName, int lin
 		{
 			/* not empty or comment */
 			spConfigAnalizeAndSet(cfg, var, val, msg);
+			if(*msg == SP_CONFIG_ALLOC_FAIL)
+			{
+				return;
+			}
 			if(*msg != SP_CONFIG_INVALID_ARGUMENT)
 			{
 				/* var name is recognized */
@@ -211,6 +219,11 @@ void spConfigParseLine(char* line, char** varName, char** valStr, SP_CONFIG_MSG*
 		*msg = SP_CONFIG_INVALID_STRING;
 		return;		
 	}
+	if(shouldBeNull){
+		/* 2 or more set chars */
+		*msg = SP_CONFIG_INVALID_STRING;
+		return;
+	}
 	/* line's syntax is good */
 	*msg = SP_CONFIG_SUCCESS;
 	*varName = varNameT;
@@ -221,15 +234,24 @@ void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* ms
 {
 	bool isDec = isDecimalNumber(val), isBool = isBooleanValue(val), 
 		s=false, s2=false;
+	char* valDup;
+	if(!(valDup = (char*)malloc((strlen(val)+1)*sizeof(char)))){
+		*msg = SP_CONFIG_ALLOC_FAIL;
+		return;
+	}
+	strcpy(valDup, val);
 	SP_KDT_SPLIT splt;
 	if(!strcmp(var,VARN_IMG_DIR)){  s=true;
-		spConfigSetImgDir(cfg, strdup(val), msg);
+		spConfigSetImgDir(cfg, valDup, msg);
 	}
 	if(!strcmp(var,VARN_IMG_PRE)){ s=true;
-		spConfigSetImgPrefix(cfg, strdup(val), msg);
+		spConfigSetImgPrefix(cfg, valDup, msg);
 	}
 	if(!strcmp(var,VARN_IMG_SUF)){ s=true;
-		spConfigSetImgSuffix(cfg, strdup(val), msg);
+		if(!strcmp(valDup, SUF_STR_JPG) || !strcmp(valDup, SUF_STR_PNG) || 
+			!strcmp(valDup, SUF_STR_BMP) || !strcmp(valDup, SUF_STR_GIF)){
+			spConfigSetImgSuffix(cfg, valDup, msg);
+		}else{ *msg = SP_CONFIG_INVALID_STRING; }
 	}
 	if(!strcmp(var,VARN_IMG_NUM)){ s=true;
 		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
@@ -240,7 +262,7 @@ void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* ms
 		else 		{spConfigSetPCADim(cfg, atoi(val), msg);}
 	}
 	if(!strcmp(var,VARN_PCA_FIL)){ s=true;
-		spConfigSetPCAFile(cfg, strdup(val), msg);
+		spConfigSetPCAFile(cfg, valDup, msg);
 	}
 	if(!strcmp(var,VARN_FTR_NUM)){ s=true;
 		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
@@ -274,7 +296,7 @@ void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* ms
 		else 		{spConfigSetLogLevel(cfg, atoi(val), msg);}
 	}
 	if(!strcmp(var,VARN_LOG_FIL)){ s=true;
-		spConfigSetLogFile(cfg, strdup(val), msg);
+		spConfigSetLogFile(cfg, valDup, msg);
 	}
 	if(!s) { *msg = SP_CONFIG_INVALID_ARGUMENT; };
 }
@@ -389,6 +411,7 @@ bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetExtractionMode(const SPConfig config, bool val, SP_CONFIG_MSG* msg)
 {
+	*msg = SP_CONFIG_SUCCESS;
 	config->extractMode = val;
 }
 /* number of similar images */
@@ -413,6 +436,7 @@ SP_KDT_SPLIT spConfigGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetSplitMethod(const SPConfig config, SP_KDT_SPLIT val, SP_CONFIG_MSG* msg)
 {
+	*msg = SP_CONFIG_SUCCESS;
 	config->splitMethod = val;
 }
 /* KNN number */
@@ -437,6 +461,7 @@ bool spConfigMinimalGui(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetMinimalGui(const SPConfig config, bool val, SP_CONFIG_MSG* msg)
 {
+	*msg = SP_CONFIG_SUCCESS;
 	config->useMinGUI = val;
 }
 /* log level */
