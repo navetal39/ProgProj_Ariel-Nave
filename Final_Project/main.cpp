@@ -37,7 +37,8 @@ int main(int argc, char* argv[])
 	/* Initialize Image Processor */
 	imPr = new ImageProc(config);
 	/* Extract features from database (images/files) and store if needed: */
-	/* TODO: extract features and store them in a database data structure */
+	/* TODO: extract features using existing method and store them in Ariel's
+	KD-Tree, when he finally finishes it... */
 	/* queries loop: */
 	do{
 		do{
