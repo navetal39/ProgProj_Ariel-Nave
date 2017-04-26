@@ -21,50 +21,46 @@ struct sp_config_t{
 	int logLvl;
 	char* logFile;
 };
-
+bool _configIsInitializing = false;
 /********************/
 /* Creating methods */
 /********************/
 SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 {
+	_configIsInitializing = true;
 	FILE* cfgFile;
 	SPConfig cfg = NULL;
 	int lineNum = 0;
 	char *line, *missing = NULL;
 	bool readAll = false;
-	if(!filename)
-	{
+	if(msg==NULL) {return NULL;}
+	if(!filename){
 		*msg = SP_CONFIG_INVALID_ARGUMENT;
-		return NULL;
+		_configIsInitializing = false; return NULL;
 	}
-	if(!(cfgFile = fopen(filename, READ_MODE)))
-	{
+	if(!(cfgFile = fopen(filename, READ_MODE))){
 		/* TODO: print error? */
 		*msg = SP_CONFIG_CANNOT_OPEN_FILE;
-		return NULL;
+		_configIsInitializing=false; return NULL;
 	}
-	if(!(cfg = (SPConfig)malloc(sizeof(struct sp_config_t))))
-	{
+	if(!(cfg = (SPConfig)malloc(sizeof(struct sp_config_t)))){
 		/* TODO: print error? */
 		*msg = SP_CONFIG_ALLOC_FAIL;
 		fclose(cfgFile);
-		return NULL;
+		_configIsInitializing=false; return NULL;
 	}
 	memset(cfgFile, 0, sizeof(struct sp_config_t));
 	spConfigSetDefaults(cfg, msg);
-	while(true)
-	{
-		if(!(line = (char*)malloc((MAX_LINE_SIZE+2)*sizeof(char))))
-		{
+	while(true){
+		if(!(line = (char*)malloc((MAX_LINE_SIZE+2)*sizeof(char))))	{
 			/* TODO: print error? */
 			*msg = SP_CONFIG_ALLOC_FAIL;
 			fclose(cfgFile);
 			spConfigDestroy(cfg);
 			free(line);
-			return NULL;
+			_configIsInitializing=false; return NULL;
 		}
-		if(!fgets(line, MAX_LINE_SIZE+1, cfgFile))
-		{
+		if(!fgets(line, MAX_LINE_SIZE+1, cfgFile)){
 			free(line);
 			readAll = true;
 			break;
@@ -74,13 +70,10 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		if(*msg != SP_CONFIG_SUCCESS){ break; }
 		lineNum++;
 	}
-	if(readAll)
-	{
+	if(readAll){
 		*msg = spConfigCheckAllSet(cfg);
-		if(*msg != SP_CONFIG_SUCCESS)
-		{
-			switch(*msg)
-			{
+		if(*msg != SP_CONFIG_SUCCESS){
+			switch(*msg){
 				case SP_CONFIG_MISSING_DIR:
 					missing = VARN_IMG_DIR;
 					break;
@@ -98,25 +91,23 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 			}
 			printf(ERR_MSG_UNSET_PARAM, filename, lineNum, missing);
 			spConfigDestroy(cfg);
-			return NULL;
+			_configIsInitializing=false; return NULL;
 		}
 	}else{
 		spConfigDestroy(cfg); 
-		return NULL;
+		_configIsInitializing=false; return NULL;
 	}
-	return cfg;
+	_configIsInitializing=false;return cfg;
 }
-void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg)
-{
+void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg){
+	if(msg==NULL){ return; }
 	char *defPcaFile, *defLogFile;
-	if(!(defPcaFile = (char*)malloc(strlen(DEFAULT_PCA_FILE)+1)))
-	{
+	if(!(defPcaFile = (char*)malloc(strlen(DEFAULT_PCA_FILE)+1))){
 		/* TODO: print error? */
 		*msg = SP_CONFIG_ALLOC_FAIL;
 		return;
 	}
-	if(!(defLogFile = (char*)malloc(strlen(DEFAULT_LOG_FILE)+1)))
-	{
+	if(!(defLogFile = (char*)malloc(strlen(DEFAULT_LOG_FILE)+1))){
 		/* TODO: print error? */
 		*msg = SP_CONFIG_ALLOC_FAIL;
 		free(defPcaFile);
@@ -134,28 +125,24 @@ void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg)
 	config->splitMethod = DEFAULT_SPLIT_METHOD;
 	config->logLvl = DEFAULT_LOG_LEVEL;
 	config->logFile = defLogFile;
+	*msg = SP_CONFIG_SUCCESS;
 }
 
-void spConfigParseAndSet(SPConfig cfg, char* line, const char* fileName, int lineNum, SP_CONFIG_MSG* msg)
-{
+void spConfigParseAndSet(SPConfig cfg, char* line, const char* fileName, int lineNum, SP_CONFIG_MSG* msg){
+	if(msg==NULL){ return; }
 	char *var = NULL, *val = NULL;
 	spConfigParseLine(line, &var, &val, msg);
-	if(*msg == SP_CONFIG_SUCCESS)
-	{
+	if(*msg == SP_CONFIG_SUCCESS){
 		/* Line syntax is OK */
-		if(var)
-		{
+		if(var){
 			/* not empty or comment */
 			spConfigAnalizeAndSet(cfg, var, val, msg);
-			if(*msg == SP_CONFIG_ALLOC_FAIL)
-			{
+			if(*msg == SP_CONFIG_ALLOC_FAIL){
 				return;
 			}
-			if(*msg != SP_CONFIG_INVALID_ARGUMENT)
-			{
+			if(*msg != SP_CONFIG_INVALID_ARGUMENT){
 				/* var name is recognized */
-				if(*msg != SP_CONFIG_SUCCESS)
-				{
+				if(*msg != SP_CONFIG_SUCCESS){
 					/* not successful - constraints must have not been met */
 					printf(ERR_MSG_INVALID_VAL, fileName, lineNum);
 				}
@@ -176,6 +163,7 @@ void spConfigParseLine(char* line, char** varName, char** valStr, SP_CONFIG_MSG*
 {
 	char *varNameH, *valStrH, *shouldBeNull;
 	char *varNameT, *valStrT;
+	if(msg==NULL){ return; }
 	if(line[0] == SET_CHAR){
 		/* line starts with set char */
 		*msg = SP_CONFIG_INVALID_STRING;
@@ -235,6 +223,7 @@ void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* ms
 	bool isDec = isDecimalNumber(val), isBool = isBooleanValue(val), 
 		s=false, s2=false;
 	char* valDup;
+	if(msg==NULL){ return; }
 	if(!(valDup = (char*)malloc((strlen(val)+1)*sizeof(char)))){
 		*msg = SP_CONFIG_ALLOC_FAIL;
 		return;
@@ -248,10 +237,7 @@ void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* ms
 		spConfigSetImgPrefix(cfg, valDup, msg);
 	}
 	if(!strcmp(var,VARN_IMG_SUF)){ s=true;
-		if(!strcmp(valDup, SUF_STR_JPG) || !strcmp(valDup, SUF_STR_PNG) || 
-			!strcmp(valDup, SUF_STR_BMP) || !strcmp(valDup, SUF_STR_GIF)){
-			spConfigSetImgSuffix(cfg, valDup, msg);
-		}else{ *msg = SP_CONFIG_INVALID_STRING; }
+		spConfigSetImgSuffix(cfg, valDup, msg);
 	}
 	if(!strcmp(var,VARN_IMG_NUM)){ s=true;
 		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
@@ -321,6 +307,7 @@ char* spConfigGetImgDir(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetImgDir(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	config->imgDir = val;
 	config->imgDirSet = true;
 	*msg = SP_CONFIG_SUCCESS;
@@ -332,6 +319,7 @@ char* spConfigGetImgPrefix(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetImgPrefix(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	config->imgPre = val;
 	config->imgPreSet = true;
 	*msg = SP_CONFIG_SUCCESS;
@@ -343,9 +331,16 @@ char* spConfigGetImgSuffix(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 {
-	config->imgSuf = val;
-	config->imgSufSet = true;
-	*msg = SP_CONFIG_SUCCESS;
+	if(msg==NULL){ return; }
+	if(!strcmp(val, SUF_STR_JPG) || !strcmp(val, SUF_STR_PNG) || 
+		!strcmp(val, SUF_STR_BMP) || !strcmp(val, SUF_STR_GIF) ||
+		(!strcmp(val,SUF_STR_FTR)&&!_configIsInitializing)){
+		config->imgSuf = val;
+		config->imgSufSet = true;
+		*msg = SP_CONFIG_SUCCESS;
+	}else{
+		*msg = SP_CONFIG_INVALID_STRING;
+	}
 }
 /* num of images */
 int spConfigGetNumOfImages(const SPConfig config, SP_CONFIG_MSG* msg)
@@ -354,6 +349,7 @@ int spConfigGetNumOfImages(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetNumOfImages(const SPConfig config, int val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	if(val <= 0)
 	{
 		*msg = SP_CONFIG_INVALID_INTEGER;
@@ -370,6 +366,7 @@ int spConfigGetPCADim(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetPCADim(const SPConfig config, int val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	if(val < 10 || val > 28)
 	{
 		*msg = SP_CONFIG_INVALID_INTEGER;
@@ -385,6 +382,7 @@ char* spConfigGetPCAFile(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetPCAFile(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	free(config->pcaFile);
 	config->pcaFile = val;
 	*msg = SP_CONFIG_SUCCESS;
@@ -396,6 +394,7 @@ int spConfigGetNumOfFeatures(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetNumOfFeatures(const SPConfig config, int val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	if(val <= 0)
 	{
 		*msg = SP_CONFIG_INVALID_INTEGER;
@@ -411,6 +410,7 @@ bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetExtractionMode(const SPConfig config, bool val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	*msg = SP_CONFIG_SUCCESS;
 	config->extractMode = val;
 }
@@ -421,6 +421,7 @@ int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetNumOfSimilarImages(const SPConfig config, int val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	if(val <= 0)
 	{
 		*msg = SP_CONFIG_INVALID_INTEGER;
@@ -436,6 +437,7 @@ SP_KDT_SPLIT spConfigGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetSplitMethod(const SPConfig config, SP_KDT_SPLIT val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	*msg = SP_CONFIG_SUCCESS;
 	config->splitMethod = val;
 }
@@ -446,6 +448,7 @@ int spConfigGetNumOfSimilarFeatures(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetNumOfSimilarFeatures(const SPConfig config, int val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	if(val<=0)
 	{
 		*msg = SP_CONFIG_INVALID_INTEGER;
@@ -461,6 +464,7 @@ bool spConfigMinimalGui(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetMinimalGui(const SPConfig config, bool val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	*msg = SP_CONFIG_SUCCESS;
 	config->useMinGUI = val;
 }
@@ -471,6 +475,7 @@ int spConfigGetLogLevel(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetLogLevel(const SPConfig config, int val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	if(val<=0 || val > 4)
 	{
 		*msg = SP_CONFIG_INVALID_INTEGER;
@@ -486,6 +491,7 @@ char* spConfigGetLogFile(const SPConfig config, SP_CONFIG_MSG* msg)
 }
 void spConfigSetLogFile(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 {
+	if(msg==NULL){ return; }
 	free(config->logFile);
 	config->logFile = val;
 	*msg = SP_CONFIG_SUCCESS;

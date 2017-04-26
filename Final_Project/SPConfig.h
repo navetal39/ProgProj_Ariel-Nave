@@ -26,6 +26,7 @@
 #define SUF_STR_PNG ".png"
 #define SUF_STR_BMP ".bmp"
 #define SUF_STR_GIF ".gif"
+#define SUF_STR_FTR ".feats"
 /* Error messages: */
 #define ERR_MSG_INVALID_LINE "File: %s\nLine: %d\nMessage: Invalid configuration line\n"
 #define ERR_MSG_INVALID_VAL "File: %s\nLine: %d\nMessage: Invalid value - constraint not met\n"
@@ -63,6 +64,7 @@
 #define VARN_LOG_FIL "spLoggerFilename"
 /* Macros: */
 #define GETTER_BODY(toGet, bad) do{\
+		if(msg==NULL){ return(bad); }\
 		if(config == NULL)\
 		{\
 			*msg = SP_CONFIG_INVALID_ARGUMENT;\
@@ -119,27 +121,185 @@ typedef struct sp_config_t* SPConfig;
  */
 SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg);
 
+/**
+ * Sets the fields that have default values in the config struct to those vaules.
+ * 
+ * @param config - a config struct pointer to edit
+ * @assert config != NULL
+ * @param msg - a pointer in which the msg returned by the function is stored
+ * @assert msg != NULL
+ *
+ * - SP_CONFIG_ALLOC_FAIL - if an allocation error occured.
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg);
 
+/**
+ * parses the string in "line" and, if it's a valid configuration line, edits "cfg"
+ * according to the info inside said line.
+ * 
+ * @param cfg - a valid config struct pointer to edit
+ * @param line - the line to parse
+ * @param fileName - the name of the config file (for printing informative errors.)
+ * @param lineNum - the line's number in the config file (for printing informative errors.)
+ * @param msg - a pointer in which the msg returned by the function is stored
+ * @assert msg != NULL
+ *
+ * - For information about the diffrent values of msg, see documentation of "spConfigParseLine"
+ *   and spConfigAnalizeAndSet
+ */
 void spConfigParseAndSet(SPConfig cfg, char* line, const char* fileName, int lineNum, SP_CONFIG_MSG* msg);
 
+/**
+ * parses the string in "line". If it's in the format of a valid configuration line it'll store the variable's
+ * name in "varName" and the value (in string format) in "valStr". If it's a comment line or empty line both of these
+ * will be set to NULL.
+ * 
+ * The valid configuration line's format is as follows:
+ * [ \f\n\r\t\v]*(\S)*[ \f\n\r\t\v]*=[ \f\n\r\t\v]*(\S)*[ \f\n\r\t\v]*\n?
+ * 
+ * @param line - the line to parse
+ * @param varName - a non-NULL pointer to where the variable's name shall be stored (if found)
+ * @param varName - a non-NULL pointer to where the value (in string format) shall be stored (if found)
+ * @param msg - a pointer in which the msg returned by the function is stored
+ * @assert msg != NULL
+ * 
+ * - SP_CONFIG_INVALID_STRING - if the line's format isn't a legal configuration line format
+ * - SP_CONFIG_SUCCESS - in the case of success
+ */
 void spConfigParseLine(char* line, char** varName, char** valStr, SP_CONFIG_MSG* msg);
 
+/**
+ * Checks that the value of "var" is a valid configuration variable name, and if so it will set it's value in
+ * the configuration struct pointed at by "cfg" to the value of "val", in the correct format(int/string/bool/etc.)
+ * 
+ * @param cfg - a config struct pointer to edit
+ * @assert config != NULL
+ * @param line - the line to parse
+ * @param fileName - the name of the config file (for printing informative errors.)
+ * @param lineNum - the line's number in the config file (for printing informative errors.)
+ * @param msg - a pointer in which the msg returned by the function is stored
+ * @assert msg != NULL
+ * 
+ * - SP_CONFIG_ALLOC_FAIL - if an allocation failure occurred
+ * - SP_CONFIG_INVALID_INTEGER - if the value is supposed to be converted to int to be stored but is not a proper base 10 integer.
+ * - SP_CONFIG_INVALID_STRING - if the value's not supposed to be converted to int to be stored (bool/split method) but is not one
+ *								of the allowed values
+ * - SP_CONFIG_INVALID_ARGUMENT - if varName does not match any legal configuration variable
+ * - SP_CONFIG_SUCCESS - in the case of success
+ * - Additionally, SP_CONFIG_INVALID_INTEGER and SP_CONFIG_INVALID_STRING may be returned in msg by the correct setter function if
+ *   the value can be converted to the correct form(int/not int) but does not meet the constraints of the variable.
+ */
 void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* msg);
 
+/**
+ * Checks that all the fields without default values in "config" have been set and returns a message that matches the first filed
+ * that was found to be not set, or if all were set.
+ * 
+ * - SP_CONFIG_MISSING_DIR - if the image directory field has not been set
+ * - SP_CONFIG_MISSING_PREFIX - if the image prefix field has not been set
+ * - SP_CONFIG_MISSING_SUFFIX - if the image suffix field has not been set
+ * - SP_CONFIG_MISSING_NUM_IMAGES - if the number of images field has not been set
+ * - SP_CONFIG_SUCCESS - if all fileds with no default values have been set
+ */
 SP_CONFIG_MSG spConfigCheckAllSet(SPConfig config);
 
 /************************/
 /* Getters and Setters: */
 /************************/
 
+/*
+ * Returns the images directory set in the configuration file, i.e the value
+ * of spImagesDirectory.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 char* spConfigGetImgDir(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spImagesDirectory, and if
+ * they do it sets the fields in "config" such that when asked for the value of spImagesDirectory,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetImgDir(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
 
+/*
+ * Returns the images prefix set in the configuration file, i.e the value
+ * of spImagesPrefix.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 char* spConfigGetImgPrefix(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spImagesPrefix, and if
+ * they do it sets the fields in "config" such that when asked for the value of spImagesPrefix,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetImgPrefix(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
 
+/*
+ * Returns the images suffix set in the configuration file, i.e the value
+ * of spImagesSuffix.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 char* spConfigGetImgSuffix(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spImagesSuffix, and if
+ * they do it sets the fields in "config" such that when asked for the value of spImagesSuffix,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_INVALID_STRING - if the constraints on val are not met
+ * - SP_CONFIG_SUCCESS - in case of success
+ * 
+ * Note that the suffix ".feats" is also concidered a valid suffix if the function is called if the
+ * configuration struct initialization has been completed already.
+ */
 void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
 
 /*
@@ -155,6 +315,22 @@ void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
  * - SP_CONFIG_SUCCESS - in case of success
  */
 int spConfigGetNumOfImages(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spNumOfImages, and if
+ * they do it sets the fields in "config" such that when asked for the value of spNumOfImages,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_INVALID_INTEGER - if the constraints on val are not met
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetNumOfImages(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
 /**
@@ -169,9 +345,52 @@ void spConfigSetNumOfImages(const SPConfig config, int val, SP_CONFIG_MSG* msg);
  * - SP_CONFIG_SUCCESS - in case of success
  */
 int spConfigGetPCADim(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spPCADimension, and if
+ * they do it sets the fields in "config" such that when asked for the value of spPCADimension,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_INVALID_INTEGER - if the constraints on val are not met
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetPCADim(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
+/*
+ * Returns the pca file set in the configuration file, i.e the value
+ * of spPcaFilename.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 char* spConfigGetPCAFile(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spPCAFilename, and if
+ * they do it sets the fields in "config" such that when asked for the value of spPCAFilename,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetPCAFile(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
 
 /*
@@ -187,6 +406,22 @@ void spConfigSetPCAFile(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
  * - SP_CONFIG_SUCCESS - in case of success
  */
 int spConfigGetNumOfFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spNumOfFeatures, and if
+ * they do it sets the fields in "config" such that when asked for the value of spNumOfFeatures,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_INVALID_INTEGER - if the constraints on val are not met
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetNumOfFeatures(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
 /*
@@ -201,15 +436,112 @@ void spConfigSetNumOfFeatures(const SPConfig config, int val, SP_CONFIG_MSG* msg
  * - SP_CONFIG_SUCCESS - in case of success
  */
 bool spConfigIsExtractionMode(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spExtractionMode, and if
+ * they do it sets the fields in "config" such that when asked for the value of spExtractionMode,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetExtractionMode(const SPConfig config, bool val, SP_CONFIG_MSG* msg);
 
+/*
+ * Returns the number of similar images set in the configuration file, i.e the value
+ * of spNumOfSimilarImg.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 int spConfigGetNumOfSimilarImages(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spNumOfSimilarImg, and if
+ * they do it sets the fields in "config" such that when asked for the value of spNumOfSimilarImg,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_INVALID_INTEGER - if the constraints on val are not met
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetNumOfSimilarImages(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
+/*
+ * Returns the KDTree's split method set in the configuration file, i.e the value
+ * of spKDTreeSplitMethod.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 SP_KDT_SPLIT spConfigGetSplitMethod(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spKDTreeSplitMethod, and if
+ * they do it sets the fields in "config" such that when asked for the value of spKDTreeSplitMethod,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetSplitMethod(const SPConfig config, SP_KDT_SPLIT val, SP_CONFIG_MSG* msg);
 
+/*
+ * Returns the number of similar features set in the configuration file, i.e the value
+ * of spKNN.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 int spConfigGetNumOfSimilarFeatures(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spKNN, and if
+ * they do it sets the fields in "config" such that when asked for the value of spKNN,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetNumOfSimilarFeatures(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
 /*
@@ -221,15 +553,85 @@ void spConfigSetNumOfSimilarFeatures(const SPConfig config, int val, SP_CONFIG_M
  * @return true if spExtractionMode = true, false otherwise.
  *
  * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_INVALID_INTEGER - if the constraints on val are not met
  * - SP_CONFIG_SUCCESS - in case of success
  */
 bool spConfigMinimalGui(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spMinimalGui, and if
+ * they do it sets the fields in "config" such that when asked for the value of spMinimalGui,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetMinimalGui(const SPConfig config, bool val, SP_CONFIG_MSG* msg);
 
+/*
+ * Returns an integer representing the logger's level that is set in the configuration file,
+ * i.e the value of spLoggerLevel, such that "1" means "Error level", 2 means "Error/warning level", etc.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 int spConfigGetLogLevel(const SPConfig config, SP_CONFIG_MSG* msg);
-void spConfigSetLogLevel(const SPConfig config, int val, SP_CONFIG_MSG* msg);
 
+/*
+ * Checks that the given value "val" meets the constraints of spLoggerLevel, and if
+ * they do it sets the fields in "config" such that when asked for the value of spLoggerLevel,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_INVALID_INTEGER - if the constraints on val are not met
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
+void spConfigSetLogLevel(const SPConfig config, int val, SP_CONFIG_MSG* msg);
+/*
+ * Returns the logger's output file name set in the configuration file, i.e the value
+ * of spLoggerFilename.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 char* spConfigGetLogFile(const SPConfig config, SP_CONFIG_MSG* msg);
+
+/*
+ * Checks that the given value "val" meets the constraints of spLoggerFilename, and if
+ * they do it sets the fields in "config" such that when asked for the value of spLoggerFilename,
+ * the value of "val" will be returned.
+ *
+ * @param config - the configuration structure
+ * @assert msg != NULL
+ * @param val - the value to replace the current one in the config struct
+ * @param msg - pointer in which the msg returned by the function is stored
+ * @return positive integer in success, negative integer otherwise.
+ *
+ * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
+ * - SP_CONFIG_SUCCESS - in case of success
+ */
 void spConfigSetLogFile(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
 /*******************/
 /* Helping methods */
@@ -284,7 +686,21 @@ SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config);
 /****************************************************/
 /* Methods not related directly to the config file: */
 /****************************************************/
+
+/**
+ * The function returns wether the given string represents a valid integer in base 10.
+ * 
+ * @return
+ * true if str represents a valid integer in base 10, false otherwise.
+ */
 bool isDecimalNumber(char* str);
+
+/**
+ * The function returns wether the given string represents a valid boolean value
+ * 
+ * @return
+ * true if str is "true" or "false", false otherwise.
+ */
 bool isBooleanValue(char* str);
 
 /**
