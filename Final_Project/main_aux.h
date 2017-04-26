@@ -9,7 +9,21 @@ extern "C" {
 #define ERR_CFG_OPEN "The%sconfiguration file %s couldn't be open\n"
 #define ERR_CFG_OPEN_D " default "
 #define ERR_CFG_OPEN_C " "
+
+#define MSG_LOG_INIT "Log system has been successfully initialized."
+#define MSG_LOG_INIT_IMPR "Image processor has been successfully set."
+#define MSG_LOG_NEW_QUERY "Requesting next query from user."
+#define MSG_LOG_CALC_START "Query image has been analized. Beginning similar images search."
+#define MSG_LOG_CALC_END "Most similar images has been found. Proceeding to showing output to user."
+#define MSG_LOG_QUERIES_END "Termination input recieved. shutting down..."
+
+#define MSG_LOG_AUX_ALLOC_ERR "An error occured while trying to allocate memory."
+#define MSG_LOG_AUX_OPEN_ERR "The file at - %s - could not be opened."
+#define MSG_LOG_AUX_READ_FEAT_ERR "An error occured while trying to recover features from - %s -, file's format may be illegal."
+#define MSG_LOG_AUX_WRITE_FEAT_ERR "An error occured while trying to store features into - %s -."
+
 #define INST_QUERY "Please enter an image path:\n"
+#define INST_QUERY_REDO "The query image could not be opened. Please try again:\n"
 #define MSG_EXIT "Exiting...\n"
 #define OUT_TITLE "Best candidates for - %s - are:\n"
 /* Defaults */
@@ -19,6 +33,7 @@ extern "C" {
 #define RET_FAIL -1
 #define QUERY_INDEX 0
 #define MAX_PATH_LENGTH 1024
+#define MAX_ERR_MSG_LENGTH 128
 #define SEP_LINE "\n"
 #define TERM_SIGN "<>"
 #define CMD_OPTION_C "-c"
@@ -44,7 +59,7 @@ typedef struct sp_img_sift_score{
  * @param x - a pointer to a siftScore struct
  * @param y - a poitner to a siftScore struct
  * 
- * returns the difference between y's score and x's score
+ * @return the difference between y's score and x's score
  */
 int scoreComp(const void* x, const void* y);
 
@@ -56,7 +71,7 @@ int scoreComp(const void* x, const void* y);
  * 
  * @param cfgPath - a string representation of the path to the config file
  * 
- * return
+ * @return
  * An initialized SPConfig struct with all the system configuration variables set according to the data in the
  * given file, or NULL if an error occured.
  */
@@ -68,7 +83,7 @@ SPConfig initConfig(const char* cfgPath);
  * 
  * @param config - a valid SPConfig object
  * 
- * return
+ * @return
  * a SP_LOGGER_MSG obtained from spLoggerCreate during the logger initialization process
  */
 SP_LOGGER_MSG initLog(SPConfig config);
@@ -82,7 +97,7 @@ SP_LOGGER_MSG initLog(SPConfig config);
  * @param config - a valid SPConfig object
  * @param totalLen - a pointer to an integer that'll store the length of the returned array
  * 
- * return
+ * @return
  * NULL if an error occured or an array of SPPoint*s that represent the extracted features, with the point's indexes
  * matching the image they have been extracted from.
  */
@@ -98,8 +113,8 @@ SPPoint** getFeatures(SPConfig config, sp::ImageProc* imPr, int* totalLen);
  * @param config - a valid SPConfig object
  * @param totalLen - an array of integers that'll store the lengths of the returned arrays
  * 
- * return
- * NULL if an error occured or an array of arrays of SPPoint*s that represent the extracted features, with the point's indexes
+ * @return
+ * NULL if an error occured, or an array of arrays of SPPoint*s that represent the extracted features, with the point's indexes
  * matching the image they have been extracted from, and each array is stored in that same index in the big array.
  */
 SPPoint*** extractDatabaseFeaturesI(SPConfig config, sp::ImageProc* imPr, int dbFeatsLens[]);
@@ -114,7 +129,7 @@ SPPoint*** extractDatabaseFeaturesI(SPConfig config, sp::ImageProc* imPr, int db
  * @param config - a valid SPConfig object
  * @param lengths - an array of integers that'll store the lengths of the returned arrays
  * 
- * return
+ * @return
  * NULL if an error occured or an array of arrays of SPPoint*s that represent the extracted features, with the point's indexes
  * matching the image they have been extracted from, and each array is stored in that same index in the big array.
  */
@@ -129,25 +144,26 @@ SPPoint*** extractDatabaseFeaturesF(SPConfig config, int lengths[]);
  * @param index - the indesx of the image who's features are to be extracted.
  * @param length - a pointer to an integer that'll contain the length of the returned array.
  * 
- * return
+ * @return
  * NULL if an error occured or an arrays of SPPoint*s that represent the extracted features, with the point's indexes
  * matching the image they have been extracted from.
  */
 SPPoint** getImageFeaturesF(SPConfig config, int index, int* length);
 
 /**
- * Given a FILE* (opened in write mode), an integer dim and an index the method will attempt to extract, recreate and return a feature of size dim and
- * index index from the current reading position at the file, moving said position accordingly.
+ * Given a FILE* (opened in write mode), a file path, an integer dim and an index the method will attempt to extract, recreate and return a feature of
+ * size dim and index index from the current reading position at the file, moving said position accordingly.
  * USE ONLY A CORRECT FILE* (matching a file of features, positioned at the beginning of a feature), NOTHING IS GURRANTEED OTHERWISE!
  * 
  * @param file - a correctly positioned, read enabled FILE* of a features file.
+ * @param filePath - the path of the opened file
  * @param dim - the dimension of the feature to be extracted.
  * @param index - the index of the points that'll represent the extracted feature.
  * 
- * return
+ * @return
  * NULL if an error occured, or a pointer to SPPoint representing the extracted feature.
  */
-SPPoint* getImageFeatureF(FILE* file, int dim, int index);
+SPPoint* getImageFeatureF(FILE* file, char* filePath,int dim, int index);
 
 /**
  * Given a valid configuration SPConfig struct, an array of arrays of features and an array of integers, the method will
@@ -160,7 +176,7 @@ SPPoint* getImageFeatureF(FILE* file, int dim, int index);
  * @param feats - an array of arrays of features.
  * @param lengths - an array of integers that stores the lengths of the arrays in feats.
  * 
- * return
+ * @return
  * false if an error occured, true otherwise.
  */
 bool storeDatabaseFeaturesF(SPConfig config, SPPoint** feats[], int lengths[]);
@@ -175,30 +191,33 @@ bool storeDatabaseFeaturesF(SPConfig config, SPPoint** feats[], int lengths[]);
  * @param feats - an array of features.
  * @param lengths - an integer that stores the length of feats.
  * 
- * return
+ * @return
  * false if an error occured, true otherwise.
  */
 bool storeImageFeaturesF(SPConfig config, SPPoint* feats[], int length);
 
 /**
- * Given a FILE* and a feature (opened in read mode), the method will write the information of the feature into the file at it's current
- * position in such a way that getImageFeatureF will be able to extract it later.
+ * Given a FILE*, a file path and a feature (opened in read mode), the method will write the information of the feature into the file
+ * at it's current position in such a way that getImageFeatureF will be able to extract it later.
  * 
  * @param file - a correctly positioned, write enabled FILE* of a features file.
+ * @param filePath - the path of the opened file
  * @param feature - the feature to be stored.
  * 
- * return
+ * @return
  * false if an error occured, true otherwise.
  */
-bool storeImageFeatureF(FILE* file, SPPoint* feature);
+bool storeImageFeatureF(FILE* file, char* filePath, SPPoint* feature);
 
 /**
- * Given a buffer of characters, the function prints instructions to the user, asking him/her to enter a path to
- * a query image, and then reads it's input into said buffer.
+ * Given a buffer of characters and a boolean flag, the function prints instructions to the user, asking him/her to
+ * enter a path to a query image, and then reads it's input into said buffer. The printed message may differ, depending on the value of
+ * the 2nd argument.
  * 
  * @param queryPath - a buffer to store the user's input.
+ * @param isFirstQuery - a boolean that determines what instruction to be printed (enter/re-enter).
  */
-void getQueryPath(char* queryPath);
+void getQueryPath(char* queryPath, bool isFirstQuery);
 
 /**
  * Given a valid configuration SPConfig struct, an image processor object, a string representing a path and an array
