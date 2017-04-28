@@ -28,7 +28,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 {
 	FILE* cfgFile;
 	SPConfig cfg = NULL;
-	int lineNum = 0;
+	int lineNum = 1;
 	char *line, *missing = NULL;
 	bool readAll = false;
 	if(msg==NULL) {return NULL;}
@@ -87,7 +87,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 				default:
 					break;
 			}
-			printf(ERR_MSG_UNSET_PARAM, filename, lineNum, missing);
+			printf(ERR_MSG_UNSET_PARAM, filename, lineNum-1, missing);
 			spConfigDestroy(cfg);
 			return NULL;
 		}
