@@ -286,21 +286,21 @@ char* spConfigGetImgSuffix(const SPConfig config, SP_CONFIG_MSG* msg);
  * Checks that the given value "val" meets the constraints of spImagesSuffix, and if
  * they do it sets the fields in "config" such that when asked for the value of spImagesSuffix,
  * the value of "val" will be returned.
+ * If he last argument is set to "true", then ".feats" is concidered a valid suffix too.
  *
  * @param config - the configuration structure
  * @assert msg != NULL
  * @param val - the value to replace the current one in the config struct
  * @param msg - pointer in which the msg returned by the function is stored
+ * @param allowfeats - wether ".feats" should be concidered legal or not
  * @return positive integer in success, negative integer otherwise.
  *
  * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
  * - SP_CONFIG_INVALID_STRING - if the constraints on val are not met
  * - SP_CONFIG_SUCCESS - in case of success
  * 
- * Note that the suffix ".feats" is also concidered a valid suffix if the function is called if the
- * configuration struct initialization has been completed already.
  */
-void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
+void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg, bool allowFeats);
 
 /*
  * Returns the number of images set in the configuration file, i.e the value

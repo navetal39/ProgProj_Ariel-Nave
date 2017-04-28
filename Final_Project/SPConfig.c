@@ -21,13 +21,11 @@ struct sp_config_t{
 	int logLvl;
 	char* logFile;
 };
-bool _configIsInitializing = false;
 /********************/
 /* Creating methods */
 /********************/
 SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 {
-	_configIsInitializing = true;
 	FILE* cfgFile;
 	SPConfig cfg = NULL;
 	int lineNum = 0;
@@ -36,18 +34,18 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	if(msg==NULL) {return NULL;}
 	if(!filename){
 		*msg = SP_CONFIG_INVALID_ARGUMENT;
-		_configIsInitializing = false; return NULL;
+		return NULL;
 	}
 	if(!(cfgFile = fopen(filename, READ_MODE))){
 		/* TODO: print error? */
 		*msg = SP_CONFIG_CANNOT_OPEN_FILE;
-		_configIsInitializing=false; return NULL;
+		return NULL;
 	}
 	if(!(cfg = (SPConfig)malloc(sizeof(struct sp_config_t)))){
 		/* TODO: print error? */
 		*msg = SP_CONFIG_ALLOC_FAIL;
 		fclose(cfgFile);
-		_configIsInitializing=false; return NULL;
+		return NULL;
 	}
 	memset(cfgFile, 0, sizeof(struct sp_config_t));
 	spConfigSetDefaults(cfg, msg);
@@ -58,7 +56,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 			fclose(cfgFile);
 			spConfigDestroy(cfg);
 			free(line);
-			_configIsInitializing=false; return NULL;
+			return NULL;
 		}
 		if(!fgets(line, MAX_LINE_SIZE+1, cfgFile)){
 			free(line);
@@ -91,13 +89,13 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 			}
 			printf(ERR_MSG_UNSET_PARAM, filename, lineNum, missing);
 			spConfigDestroy(cfg);
-			_configIsInitializing=false; return NULL;
+			return NULL;
 		}
 	}else{
 		spConfigDestroy(cfg); 
-		_configIsInitializing=false; return NULL;
+		return NULL;
 	}
-	_configIsInitializing=false;return cfg;
+	return cfg;
 }
 void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg){
 	if(msg==NULL){ return; }
@@ -237,7 +235,7 @@ void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* ms
 		spConfigSetImgPrefix(cfg, valDup, msg);
 	}
 	if(!strcmp(var,VARN_IMG_SUF)){ s=true;
-		spConfigSetImgSuffix(cfg, valDup, msg);
+		spConfigSetImgSuffix(cfg, valDup, msg, false);
 	}
 	if(!strcmp(var,VARN_IMG_NUM)){ s=true;
 		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
@@ -329,12 +327,12 @@ char* spConfigGetImgSuffix(const SPConfig config, SP_CONFIG_MSG* msg)
 {
 	GETTER_BODY(config->imgSuf, NULL);
 }
-void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
+void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg, bool allowFeats)
 {
 	if(msg==NULL){ return; }
 	if(!strcmp(val, SUF_STR_JPG) || !strcmp(val, SUF_STR_PNG) || 
 		!strcmp(val, SUF_STR_BMP) || !strcmp(val, SUF_STR_GIF) ||
-		(!strcmp(val,SUF_STR_FTR)&&!_configIsInitializing)){
+		(!strcmp(val,SUF_STR_FTR)&&!allowFeats)){
 		config->imgSuf = val;
 		config->imgSufSet = true;
 		*msg = SP_CONFIG_SUCCESS;
