@@ -338,24 +338,3 @@ void printNearestIndexes(SPConfig config, ImageProc* imPr, char* qPath, int* ind
 		indexes++;
 	}
 }
-
-void destroyPointsArray(SPPoint** pointArray, int arrayLength)
-{
-	int i;
-	for(i = 0; i < arrayLength; ++i)
-	{
-		spPointDestroy(pointArray[i]);
-	}
-	free(pointArray);
-}
-
-void destroyPointsArrayArray(SPPoint*** arraysArray, int arrayLength,
-							int* varyingLengths)
-{
-	int i;
-	for(i = 0; i<arrayLength; i++)
-	{
-		destroyPointsArray(arraysArray[i], varyingLengths[i]);
-	}
-	free(arraysArray);
-}

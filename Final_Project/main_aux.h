@@ -230,34 +230,3 @@ void getQueryPath(char* queryPath, bool isFirstQuery);
  * @param indexes[] - an array of integers, all of which's members are non-negative except for the last one, which is -1.
  */
 void printNearestIndexes(SPConfig config, sp::ImageProc* imPr, char* qPath, int* indexes);
-
-/**
- * Destroys all the points pointed at by a pointer in the array of point pointers "pointArray",
- * then frees pointArray
- * 
- * Given an array of pointers to points and the length of said array, the function will destroy
- * all the points pointed at by a pointer in the points pointer array using spPointDestroy()
- * and then free the array itself.
- * 
- * @param pointArray - the array of pointers to the points to be destroyed
- * @param arraylength - the length of the point pointers array
- */
-void destroyPointsArray(SPPoint** pointArray, int arrayLength);
-
-/******************************/
-/* OLD STUFF - MAY BE REMOVED */
-/******************************/
-
-/**
- * For each array pointed to by a member of arraysArray, this function destroys all points pointed to by
- * a pointer in said array, then frees it. Finally, it frees arraysArray itself.
- * 
- * Given an array of arrays of pointers to points, the length of said array and the lengths of the feature arrays
- * (if the flag is 1), the function will destroy each of the points array using destroyPointsArray, then free
- * the "main" array itself
- * 
- * @param arraysArray - the array of arrays of pointers to the points to be destroyed
- * @param arraylength - the length of the array array
- * @param arraysLengths - contains the respective lengths of the features arrays.
- */
-void destroyPointsArrayArray(SPPoint*** arraysArray, int arrayLength, int* arraysLengths);
