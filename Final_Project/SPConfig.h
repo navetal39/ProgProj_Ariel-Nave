@@ -77,6 +77,37 @@
  * A data-structure which is used for configuring the system.
  */
 
+/**
+ * SPConfig summary
+ *
+ * the SPConfig contains inforamtion extracted from a configuration file
+ * The configuration file is a text file (or at least should be readable as such), with each line representing
+ * one configuration variable (unless it's either empty or a comment line.)
+ * 
+ * The valid configuration line's format is as follows:
+ * [ \f\n\r\t\v]*(\S)*[ \f\n\r\t\v]*=[ \f\n\r\t\v]*(\S)*[ \f\n\r\t\v]*\n?
+ * with the '\n' not appearing at the end only if it's the last line in the file.
+ * Comment lines are lines that have 'W' as their first non-whitespace character.
+ *
+ * The following functions are supported:
+ *
+ * spConfigCreate - creates a config struct
+ * spConfigSetDefaults - sets the values of all configuration variables in a config struct to their
+ * 						default values (if they have one)
+ * spConfigParseAndSet - Parses a configuration line and updates a config struct accordingly
+ * spConfigParseLine - parses a configuration line
+ * spConfigAnalizeAndSet - checks that the given variable and value meet all constraints and updates a config struct
+ * 							accordingly
+ * spConfigCheckAllSet - checks that all fields in a config struct are set
+ * Getters and Setters for each one of the 14 configuration variables
+ * spConfigDestroy - frees all memory used by a config struct
+ * spConfigGetImagePath - retrives the full path of an image of a specific index
+ * spConfigGetPCAPath - retrives the full path of the PCA file
+ * 
+ */
+
+/** the struct used for kd_tree node**/
+
 typedef enum sp_config_msg_t {
 	SP_CONFIG_MISSING_DIR,
 	SP_CONFIG_MISSING_PREFIX,
@@ -154,9 +185,6 @@ void spConfigParseAndSet(SPConfig cfg, char* line, const char* fileName, int lin
  * parses the string in "line". If it's in the format of a valid configuration line it'll store the variable's
  * name in "varName" and the value (in string format) in "valStr". If it's a comment line or empty line both of these
  * will be set to NULL.
- * 
- * The valid configuration line's format is as follows:
- * [ \f\n\r\t\v]*(\S)*[ \f\n\r\t\v]*=[ \f\n\r\t\v]*(\S)*[ \f\n\r\t\v]*\n?
  * 
  * @param line - the line to parse
  * @param varName - a non-NULL pointer to where the variable's name shall be stored (if found)
@@ -286,13 +314,11 @@ char* spConfigGetImgSuffix(const SPConfig config, SP_CONFIG_MSG* msg);
  * Checks that the given value "val" meets the constraints of spImagesSuffix, and if
  * they do it sets the fields in "config" such that when asked for the value of spImagesSuffix,
  * the value of "val" will be returned.
- * If he last argument is set to "true", then ".feats" is concidered a valid suffix too.
  *
  * @param config - the configuration structure
  * @assert msg != NULL
  * @param val - the value to replace the current one in the config struct
  * @param msg - pointer in which the msg returned by the function is stored
- * @param allowfeats - wether ".feats" should be concidered legal or not
  * @return positive integer in success, negative integer otherwise.
  *
  * - SP_CONFIG_INVALID_ARGUMENT - if config == NULL
@@ -300,7 +326,7 @@ char* spConfigGetImgSuffix(const SPConfig config, SP_CONFIG_MSG* msg);
  * - SP_CONFIG_SUCCESS - in case of success
  * 
  */
-void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg, bool allowFeats);
+void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg);
 
 /*
  * Returns the number of images set in the configuration file, i.e the value

@@ -170,10 +170,10 @@ SPPoint** getImageFeaturesF(SPConfig config, int index, int* length)
 	strcpy(sufNew, FEATS_FILE_SUFFIX);
 	sufBackup = spConfigGetImgSuffix(config, &configMsg);
 	/* TODO check message? */
-	spConfigSetImgSuffix(config, sufNew, &configMsg, true);
+	spConfigSetImgSuffix(config, sufNew, &configMsg);
 	/* TODO check message? */
 	spConfigGetImagePath(filePath, config, index);
-	spConfigSetImgSuffix(config, sufBackup, &configMsg, false);
+	spConfigSetImgSuffix(config, sufBackup, &configMsg);
 	/* TODO check message? */
 	free(sufNew);
 
@@ -254,10 +254,10 @@ bool storeImageFeaturesF(SPConfig config, SPPoint* feats[], int length)
 	strcpy(sufNew, FEATS_FILE_SUFFIX);
 	sufBackup = spConfigGetImgSuffix(config, &configMsg);
 	/* TODO check message? */
-	spConfigSetImgSuffix(config, sufNew, &configMsg, true);
+	spConfigSetImgSuffix(config, sufNew, &configMsg);
 	/* TODO check message? */
 	spConfigGetImagePath(filePath, config, index);
-	spConfigSetImgSuffix(config, sufBackup, &configMsg, false);
+	spConfigSetImgSuffix(config, sufBackup, &configMsg);
 	/* TODO check message? */
 	free(sufNew);
 

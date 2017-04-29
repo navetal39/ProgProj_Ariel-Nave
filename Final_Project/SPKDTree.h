@@ -3,9 +3,9 @@
 #include "SPBPriorityQueue.h"
 
 /**
- * kd_tree summary
+ * KDTree summary
  *
- * the kd_tree contains inforamtion of points
+ * the KDTree contains inforamtion of points
  * the leaves in the tree represents points and contains their data
  * the internal nodes are for splitting the tree by certain value
  *
@@ -57,7 +57,7 @@ void spKDTreeDestroy(KDTree tree);
  * positive value - means success, and this is the asked dimension
  * -1             - means fail
  */
-int spKDTreeGetSplitDimension(SPKDArray* array, KDTREE_WHAT_METHOD what_method, int inc_index);
+int spKDTreeGetSplitDimension(SPKDArray* array, SP_KDT_SPLIT what_method, int inc_index);
 
 /**
  * creates the tree recursively from a given kd_array (splitting the kd_array and calling the itself for left and for right)
@@ -68,7 +68,7 @@ int spKDTreeGetSplitDimension(SPKDArray* array, KDTREE_WHAT_METHOD what_method, 
  * a kd_tree - the new kd_tree that was created and initialized
  * in case of failure - returns NULL
  */
-KDTree spKDTreeCreateRecursive(SPKDArray* array , KDTREE_WHAT_METHOD what_method, int inc_index);
+KDTree spKDTreeCreateRecursive(SPKDArray* array , SP_KDT_SPLIT what_method, int inc_index);
 
 /**
  * creates the tree given the data - practicly - creating kd_array from the data and calling to KDTree_Create_Rec
@@ -79,7 +79,7 @@ KDTree spKDTreeCreateRecursive(SPKDArray* array , KDTREE_WHAT_METHOD what_method
  * a kd_tree - the new kd_tree that was created and initialized
  * in case of failure - returns NULL
  */
-KDTree spKDTreeCreate(SPPoint** points, int length,  KDTREE_WHAT_METHOD what_method)
+KDTree spKDTreeCreate(SPPoint** points, int length,  SP_KDT_SPLIT what_method);
 
 /**
  * filling a given queue with the closest points to a query point in a given kd_tree

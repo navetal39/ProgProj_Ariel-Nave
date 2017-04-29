@@ -15,8 +15,8 @@ int main(int argc, char* argv[])
 {
 	SPConfig config;
 	SP_LOGGER_MSG logMsg;
-	SPPoint **queryFeatures;
-	int queryFeatCount, *nearestIndexes = NULL;
+	SPPoint **queryFeatures, **dbFeatures;
+	int dbFeatCount, queryFeatCount, *nearestIndexes = NULL;
 	char query[MAX_PATH_LENGTH+1];
 	bool isFirstQuery;
 	ImageProc *imPr;
@@ -40,6 +40,7 @@ int main(int argc, char* argv[])
 	imPr = new ImageProc(config);
 	spLoggerPrintInfo(MSG_LOG_INIT_IMPR);
 	/* Extract features from database (images/files) and store if needed: */
+	dbFeatures = getFeatures(config, imPr, &dbFeatCount);
 	/* TODO: extract features using existing method and store them in Ariel's
 	KD-Tree, when he finally finishes it... */
 	/* queries loop: */
@@ -69,6 +70,7 @@ int main(int argc, char* argv[])
 	printf(MSG_EXIT);
 	/* Clean up and exit: */
 	/* TODO: destroy the database data structure */
+	destroyPointsArray(dbFeatures, dbFeatCount);
 	spLoggerDestroy();
 	spConfigDestroy(config);
 	return RET_SUCCESS;
