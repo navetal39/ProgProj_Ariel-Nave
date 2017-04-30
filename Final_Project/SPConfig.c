@@ -69,6 +69,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		if(*msg != SP_CONFIG_SUCCESS){ break; }
 		lineNum++;
 	}
+	fclose(cfgFile);
 	if(readAll){
 		*msg = spConfigCheckAllSet(cfg);
 		if(*msg != SP_CONFIG_SUCCESS){
@@ -126,6 +127,10 @@ void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg){
 	config->logLvl = DEFAULT_LOG_LEVEL;
 	config->logFile = defLogFile;
 	config->allowFeats = false;
+	config->imgDirSet = false;
+	config->imgPreSet = false;
+	config->imgSufSet = false;
+	config->imgNumSet = false;
 	*msg = SP_CONFIG_SUCCESS;
 }
 
@@ -222,7 +227,7 @@ void spConfigParseLine(char* line, char** varName, char** valStr, SP_CONFIG_MSG*
 void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* msg)
 {
 	bool isDec = isDecimalNumber(val), isBool = isBooleanValue(val), 
-		s=false, s2=false;
+		s=false, s2=false, isStr=false;
 	char* valDup;
 	if(msg==NULL){ return; }
 	if(!(valDup = (char*)malloc((strlen(val)+1)*sizeof(char)))){
@@ -232,13 +237,13 @@ void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* ms
 	strcpy(valDup, val);
 	SP_KDT_SPLIT splt;
 	if(!strcmp(var,VARN_IMG_DIR)){  s=true;
-		spConfigSetImgDir(cfg, valDup, msg);
+		spConfigSetImgDir(cfg, valDup, msg); isStr=true;
 	}
 	if(!strcmp(var,VARN_IMG_PRE)){ s=true;
-		spConfigSetImgPrefix(cfg, valDup, msg);
+		spConfigSetImgPrefix(cfg, valDup, msg); isStr=true;
 	}
 	if(!strcmp(var,VARN_IMG_SUF)){ s=true;
-		spConfigSetImgSuffix(cfg, valDup, msg);
+		spConfigSetImgSuffix(cfg, valDup, msg); isStr=true;
 	}
 	if(!strcmp(var,VARN_IMG_NUM)){ s=true;
 		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
@@ -249,7 +254,7 @@ void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* ms
 		else 		{spConfigSetPCADim(cfg, atoi(val), msg);}
 	}
 	if(!strcmp(var,VARN_PCA_FIL)){ s=true;
-		spConfigSetPCAFile(cfg, valDup, msg);
+		spConfigSetPCAFile(cfg, valDup, msg); isStr=true;
 	}
 	if(!strcmp(var,VARN_FTR_NUM)){ s=true;
 		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
@@ -283,9 +288,10 @@ void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* ms
 		else 		{spConfigSetLogLevel(cfg, atoi(val), msg);}
 	}
 	if(!strcmp(var,VARN_LOG_FIL)){ s=true;
-		spConfigSetLogFile(cfg, valDup, msg);
+		spConfigSetLogFile(cfg, valDup, msg); isStr=true;
 	}
 	if(!s) { *msg = SP_CONFIG_INVALID_ARGUMENT; };
+	if(!isStr) {free(valDup);}
 }
 
 SP_CONFIG_MSG spConfigCheckAllSet(SPConfig config)
@@ -583,4 +589,13 @@ void spConfigDestroy(SPConfig config)
 		free(config->logFile);
 		free(config);
 	}	
+}
+
+int main()
+{
+	SPConfig cfg;
+	SP_CONFIG_MSG msg;
+	cfg = spConfigCreate("spcbir.config",&msg);
+	spConfigDestroy(cfg);
+	return 0;
 }

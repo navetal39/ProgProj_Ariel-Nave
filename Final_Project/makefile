@@ -35,11 +35,11 @@ SPConfig.o: SPConfig.c SPConfig.h SPLogger.h
 SPImageProc.o: SPImageProc.cpp SPImageProc.h SPConfig.h SPPoint.h SPLogger.h
 	$(CPP) $(CPP_COMP_FLAG) -I$(INCLUDEPATH) -c $*.cpp
 
-SPKDArray.o: SPKDArray.c SPKDArray.h SPPoint.h
-	$(CPP) $(CPP_COMP_FLAG) -I$(INCLUDEPATH) -c $*.c
+SPKDArray.o: SPKDArray.c SPKDArray.h SPPoint.h SPBPriorityQueue.h
+	$(CC) $(C_COMP_FLAG) -c $*.c
 
-SPKDTree.o: SPKDTree.c SPKDTree.h SPKDArray.h SPPoint.h SPConfig.h SPLogger.h
-	$(CPP) $(CPP_COMP_FLAG) -I$(INCLUDEPATH) -c $*.c
+SPKDTree.o: SPKDTree.c SPKDTree.h SPKDArray.h SPPoint.h SPBPriorityQueue.h SPConfig.h SPLogger.h
+	$(CC) $(C_COMP_FLAG) -c $*.c
 
 main_aux.o: main_aux.cpp main_aux.h SPImageProc.h SPConfig.h SPLogger.h SPPoint.h SPBPriorityQueue.h SPKDTree.h SPKDArray.h
 	$(CPP) $(CPP_COMP_FLAG) -I$(INCLUDEPATH) -c $*.cpp

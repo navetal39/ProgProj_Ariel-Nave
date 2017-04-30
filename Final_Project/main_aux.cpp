@@ -3,7 +3,6 @@
 #include <cstring>
 #include "main_aux.h"
 extern "C" {
-	#include "SPConfig.h"
 	#include "SPBPriorityQueue.h"
 }
 
