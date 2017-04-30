@@ -215,33 +215,25 @@ int spKDTreeKNN(KDTree tree, SPPoint* query, int k, int* bestIndices) {
 
     SPBPQueue* queue;
     int i, j, error_flag;
-    BPQueueElement* tempElement;
-
-    tempElement = (BPQueueElement*)malloc(sizeof(BPQueueElement));
-    if (tempElement == NULL) {
-        return -1;
-    }
+    BPQueueElement tempElement;
 
     queue = spBPQueueCreate(k);
     error_flag = spKDTreeKNNRecursive(queue, tree , query);
     if (error_flag == -1) {
-        free(tempElement);
         ERASE_QUEUE(queue);
         return -1;
     }
     for (i = 0; i < k; i++) {
-        if (spBPQueuePeek(queue, tempElement) != SP_BPQUEUE_SUCCESS) {
+        if (spBPQueuePeek(queue, &tempElement) != SP_BPQUEUE_SUCCESS) {
             for (j = i; j <= k; j++) {
                 bestIndices[j] = -1;
             }
             ERASE_QUEUE(queue);
-            free(tempElement);
             return -1;
         }
-        bestIndices[i] = tempElement->index;
+        bestIndices[i] = tempElement.index;
         spBPQueueDequeue(queue);
     }
-    free(tempElement);
     ERASE_QUEUE(queue);
     bestIndices[k] = -1;
     return 0;

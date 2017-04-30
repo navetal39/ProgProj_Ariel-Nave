@@ -15,10 +15,11 @@ int main(int argc, char* argv[])
 {
 	SPConfig config;
 	SP_LOGGER_MSG logMsg;
+	KDTree tree;
 	SPPoint **queryFeatures, **dbFeatures;
 	int dbFeatCount, queryFeatCount, *nearestIndexes = NULL;
 	char query[MAX_PATH_LENGTH+1];
-	bool isFirstQuery;
+	bool isFirstQuery, printSuccessful;
 	ImageProc *imPr;
 	/* Initialize Config: */
 	if((argc != 1) && (argc != 3 || strcmp(argv[1],CMD_OPTION_C))){
@@ -39,10 +40,9 @@ int main(int argc, char* argv[])
 	/* Initialize Image Processor */
 	imPr = new ImageProc(config);
 	spLoggerPrintInfo(MSG_LOG_INIT_IMPR);
-	/* Extract features from database (images/files) and store if needed: */
+	/* Initialize KDTree: */
 	dbFeatures = getFeatures(config, imPr, &dbFeatCount);
-	/* TODO: extract features using existing method and store them in Ariel's
-	KD-Tree, when he finally finishes it... */
+	tree = makeKDTree(config, dbFeatures, dbFeatCount);
 	/* queries loop: */
 	do{
 		spLoggerPrintInfo(MSG_LOG_NEW_QUERY);
@@ -59,17 +59,18 @@ int main(int argc, char* argv[])
 		if(SHOULD_RUN(query))
 		{
 			spLoggerPrintInfo(MSG_LOG_CALC_START);
-			/* TODO: get closest images indexes into nearestIndexes */
+			nearestIndexes = getNearestIndexes(config, queryFeatures, tree);
 			spLoggerPrintInfo(MSG_LOG_CALC_END);
-			printNearestIndexes(config, imPr, query, nearestIndexes);
+			printSuccessful = printNearestIndexes(config, imPr, query, nearestIndexes);
 			destroyPointsArray(queryFeatures, queryFeatCount);
 			free(nearestIndexes);
+			if(!printSuccessful){ break; }
 		}
 	}while(SHOULD_RUN(query));
 	spLoggerPrintInfo(MSG_LOG_QUERIES_END);
 	printf(MSG_EXIT);
 	/* Clean up and exit: */
-	/* TODO: destroy the database data structure */
+	spKDTreeDestroy(tree);
 	destroyPointsArray(dbFeatures, dbFeatCount);
 	spLoggerDestroy();
 	spConfigDestroy(config);

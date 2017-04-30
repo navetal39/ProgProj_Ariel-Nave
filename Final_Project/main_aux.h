@@ -21,6 +21,7 @@ extern "C" {
 #define MSG_LOG_AUX_OPEN_ERR "The file at - %s - could not be opened."
 #define MSG_LOG_AUX_READ_FEAT_ERR "An error occured while trying to recover features from - %s -, file's format may be illegal."
 #define MSG_LOG_AUX_WRITE_FEAT_ERR "An error occured while trying to store features into - %s -."
+#define MSG_LOG_AUX_CFG_NULL "The configuration file is NULL."
 
 #define INST_QUERY "Please enter an image path:\n"
 #define INST_QUERY_REDO "The query image could not be opened. Please try again:\n"
@@ -95,6 +96,7 @@ SP_LOGGER_MSG initLog(SPConfig config);
  * pointed at by the 2nd argument.
  * 
  * @param config - a valid SPConfig object
+ * @assert config != NULL
  * @param totalLen - a pointer to an integer that'll store the length of the returned array
  * 
  * @return
@@ -127,6 +129,7 @@ SPPoint*** extractDatabaseFeaturesI(SPConfig config, sp::ImageProc* imPr, int db
  * matching indexes in the array that is the 2nd argument
  * 
  * @param config - a valid SPConfig object
+ * @assert config != NULL
  * @param lengths - an array of integers that'll store the lengths of the returned arrays
  * 
  * @return
@@ -141,6 +144,7 @@ SPPoint*** extractDatabaseFeaturesF(SPConfig config, int lengths[]);
  * file) and return an array containing them. The length of this array is stored at the integer pointed at by the 3rd argument.
  * 
  * @param config - a valid SPConfig object
+ * @assert config != NULL
  * @param index - the indesx of the image who's features are to be extracted.
  * @param length - a pointer to an integer that'll contain the length of the returned array.
  * 
@@ -188,6 +192,7 @@ bool storeDatabaseFeaturesF(SPConfig config, SPPoint** feats[], int lengths[]);
  * The path to the image directory, at which the features will be stored, as well as the naming convensions are given by the config file.
  * 
  * @param config - a valid SPConfig object.
+ * @assert config != NULL
  * @param feats - an array of features.
  * @param lengths - an integer that stores the length of feats.
  * 
@@ -201,6 +206,7 @@ bool storeImageFeaturesF(SPConfig config, SPPoint* feats[], int length);
  * at it's current position in such a way that getImageFeatureF will be able to extract it later.
  * 
  * @param file - a correctly positioned, write enabled FILE* of a features file.
+ * @assert config != NULL
  * @param filePath - the path of the opened file
  * @param feature - the feature to be stored.
  * 
@@ -208,6 +214,19 @@ bool storeImageFeaturesF(SPConfig config, SPPoint* feats[], int length);
  * false if an error occured, true otherwise.
  */
 bool storeImageFeatureF(FILE* file, char* filePath, SPPoint* feature);
+
+/**
+ * Given a valid configuration SPConfig struct, an array of features and the length of said array, this function
+ * returns a KDTree data structure containing the features.
+ * 
+ * @param config - a valid SPConfig object
+ * @param features - an array of features, represented as SPPoint*s.
+ * @param len - the lengths of features
+ * 
+ * @return
+ * NULL if an error occured or a KDTree containing the features in features
+ */
+KDTree makeKDTree(SPConfig config, SPPoint** features, int len);
 
 /**
  * Given a buffer of characters and a boolean flag, the function prints instructions to the user, asking him/her to
@@ -220,6 +239,36 @@ bool storeImageFeatureF(FILE* file, char* filePath, SPPoint* feature);
 void getQueryPath(char* queryPath, bool isFirstQuery);
 
 /**
+ * Given a valid configuration SPConfig struct, an array of features from a query image, it's length and a valid KDTree containing the 
+ * features of various images, the function will return the indexes of the images who were found to be the closest to the image from
+ * which the query features were extracted, sorted according to their "closeness score".
+ * 
+ * @param config - a valid SPConfig object
+ * @assert config != NULL
+ * @param features - an array of features, represented as SPPoint*s.
+ * @param len - the length of features
+ * @param tree - a KDTree containing the database features
+ * 
+ * @return
+ * NULL if an error occured, otherwise a -1 terminated buffer containing the indexes of the closest images, sorted by "distance".
+ */
+int* getNearestIndexes(SPConfig config, SPPoint** queryFeatures, int len, KDTree tree);
+
+/**
+ * Given an array of integers and it's length and a non-negative integer "k", the function will return a buffer containing the k indexes
+ * that store the highest values in buff, sorted in such a way that the higher the value at an index, the earlier it'll appear in the
+ * returning buffer.
+ * 
+ * @param buff - an array of integers
+ * @param len = the length of "buff"
+ * @param k - the number of indexes to be found
+ * 
+ * @return
+ * NULL if an error occured, otherwise a -1 terminated buffer of the indexes of the highest values in buff, sorted by said value.
+ */
+int* getHighestIndexes(int* buff, int len, int k)
+
+/**
  * Given a valid configuration SPConfig struct, an image processor object, a string representing a path and an array
  * of non-negative integers terminated with -1, the method will display the images who's indexes are in the integer array,
  * or print their paths, in the order at which they arelisted in the array. The output type depends on the information
@@ -227,6 +276,10 @@ void getQueryPath(char* queryPath, bool isFirstQuery);
  * The 2nd argument is used for the 1st line printed (if minimal GUI is turned off) which serves as a "title"
  * 
  * @param config - a valid SPConfig object
+ * @assert config != NULL
  * @param indexes[] - an array of integers, all of which's members are non-negative except for the last one, which is -1.
+ * 
+ * @return
+ * true if everything was successful, false if an error occured.
  */
-void printNearestIndexes(SPConfig config, sp::ImageProc* imPr, char* qPath, int* indexes);
+bool printNearestIndexes(SPConfig config, sp::ImageProc* imPr, char* qPath, int* indexes);

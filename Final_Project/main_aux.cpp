@@ -7,10 +7,6 @@ extern "C" {
 }
 
 using namespace sp;
-int scoreComp(const void* x, const void* y)
-{
-	return (((siftScore*)y)->score-((siftScore*)x)->score);
-}
 
 SPConfig initConfig(const char* cfgPath)
 {
@@ -65,10 +61,12 @@ SPPoint** getFeatures(SPConfig config, ImageProc* imPr, int* totalLen)
 	SPPoint*** dbFeats;
 	SPPoint** dbFeatsMerged = NULL;
 	bool eMode;
+	if(!config){
+		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
+		return NULL;
+	}
 	iNum = spConfigGetNumOfImages(config, &configMsg);
-	/* TODO check message? */
 	eMode = spConfigIsExtractionMode(config, &configMsg);
-	/* TODO check message? */
 	if(!(lengths=(int*)malloc(iNum*sizeof(int)))){
 		spLoggerPrintError(MSG_LOG_AUX_ALLOC_ERR, __FILE__, __func__, __LINE__);
 		return NULL;
@@ -116,8 +114,11 @@ SPPoint*** extractDatabaseFeaturesI(SPConfig config, ImageProc* imPr, int dbFeat
 	char imgPath[MAX_PATH_LENGTH+1];
 	SP_CONFIG_MSG configMsg;
 	SPPoint*** dbFeats;
+	if(!config){
+		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
+		return NULL;
+	}
 	iNum = spConfigGetNumOfImages(config, &configMsg);
-	/* TODO check message? */
 	if(!(dbFeats=(SPPoint***)malloc(iNum*sizeof(SPPoint**))))
 	{
 		spLoggerPrintError(MSG_LOG_AUX_ALLOC_ERR, __FILE__, __func__, __LINE__);
@@ -127,7 +128,6 @@ SPPoint*** extractDatabaseFeaturesI(SPConfig config, ImageProc* imPr, int dbFeat
 	{
 		memset(imgPath, NULL_CHAR, MAX_PATH_LENGTH+1);
 		configMsg = spConfigGetImagePath(imgPath, config, i);
-		/* TODO check message? */
 		if(!(dbFeats[i] = imPr->getImageFeatures(imgPath, i, dbFeatsLens+i)))
 		{
 			destroyPointsArrayArray(dbFeats, i, dbFeatsLens);
@@ -141,8 +141,11 @@ SPPoint*** extractDatabaseFeaturesF(SPConfig config, int lengths[])
 	SPPoint*** ret;
 	int iNum, i;
 	SP_CONFIG_MSG configMsg;
+	if(!config){
+		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
+		return NULL;
+	}
 	iNum = spConfigGetNumOfImages(config, &configMsg);
-	/* TODO check message? */
 	if(!(ret=(SPPoint***)malloc(iNum*sizeof(SPPoint**)))){
 		spLoggerPrintError(MSG_LOG_AUX_ALLOC_ERR, __FILE__, __func__, __LINE__);
 		return NULL;
@@ -164,16 +167,19 @@ SPPoint** getImageFeaturesF(SPConfig config, int index, int* length)
 		cplxErrMsg[MAX_ERR_MSG_LENGTH+MAX_PATH_LENGTH];
 	SP_CONFIG_MSG configMsg;
 	FILE* file;
-
-	sufNew = (char*)malloc(strlen(FEATS_FILE_SUFFIX)*sizeof(char)+1);
+	if(!config){
+		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
+		return NULL;
+	}
+	if(!(sufNew = (char*)malloc(strlen(FEATS_FILE_SUFFIX)*sizeof(char)+1))){
+		spLoggerPrintError(MSG_LOG_AUX_ALLOC_ERR, __FILE__, __func__, __LINE__);
+		return NULL;
+	}
 	strcpy(sufNew, FEATS_FILE_SUFFIX);
 	sufBackup = spConfigGetImgSuffix(config, &configMsg);
-	/* TODO check message? */
 	spConfigSetImgSuffix(config, sufNew, &configMsg);
-	/* TODO check message? */
 	spConfigGetImagePath(filePath, config, index);
 	spConfigSetImgSuffix(config, sufBackup, &configMsg);
-	/* TODO check message? */
 	free(sufNew);
 
 	if(!(file=(fopen(filePath, READ_MODE)))){
@@ -228,8 +234,11 @@ bool storeDatabaseFeaturesF(SPConfig config, SPPoint** feats[], int lengths[])
 {
 	int iNum, i;
 	SP_CONFIG_MSG configMsg;
+	if(!config){
+		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
+		return false;
+	}
 	iNum = spConfigGetNumOfImages(config, &configMsg);
-	/* TODO check message? */
 	for(i=0;i<iNum;i++)
 	{
 		if(!storeImageFeaturesF(config, feats[i], lengths[i])){
@@ -244,20 +253,25 @@ bool storeImageFeaturesF(SPConfig config, SPPoint* feats[], int length)
 	char filePath[MAX_PATH_LENGTH+1], *sufNew, *sufBackup, cplxErrMsg[MAX_ERR_MSG_LENGTH+MAX_PATH_LENGTH];;
 	SP_CONFIG_MSG configMsg;
 	FILE* file;
+	if(!config){
+		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
+		return false;
+	}
 
 	dim = spPointGetDimension(feats[0]);
 	toWrite[0]=length; toWrite[1]=dim;
 	index = spPointGetIndex(feats[0]);
 
-	sufNew = (char*)malloc(strlen(FEATS_FILE_SUFFIX)*sizeof(char)+1);
+	if(!(sufNew = (char*)malloc(strlen(FEATS_FILE_SUFFIX)*sizeof(char)+1)))
+	{
+		spLoggerPrintError(MSG_LOG_AUX_ALLOC_ERR, __FILE__, __func__, __LINE__);
+		return false;
+	}
 	strcpy(sufNew, FEATS_FILE_SUFFIX);
 	sufBackup = spConfigGetImgSuffix(config, &configMsg);
-	/* TODO check message? */
 	spConfigSetImgSuffix(config, sufNew, &configMsg);
-	/* TODO check message? */
 	spConfigGetImagePath(filePath, config, index);
 	spConfigSetImgSuffix(config, sufBackup, &configMsg);
-	/* TODO check message? */
 	free(sufNew);
 
 	if(!(file=(fopen(filePath, WRITE_MODE)))){
@@ -305,6 +319,18 @@ bool storeImageFeatureF(FILE* file, char* filePath, SPPoint* feature)
 	return true;
 }
 
+KDTree makeKDTree(SPConfig config, SPPoint** features, int len)
+{
+	SP_CONFIG_MSG configMsg;
+	spKDTreeSplitMethod meth;
+	if(!config){
+		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
+		return NULL;
+	}
+	meth = spConfigGetSplitMethod(config, &configMsg);
+	return spKDTreeCreate(features, len, meth);
+}
+
 void getQueryPath(char* queryPath, bool isFirstQuery)
 {
 	printf((isFirstQuery)?INST_QUERY:INST_QUERY_REDO);
@@ -313,12 +339,81 @@ void getQueryPath(char* queryPath, bool isFirstQuery)
 	READ_STR(queryPath);
 }
 
-void printNearestIndexes(SPConfig config, ImageProc* imPr, char* qPath, int* indexes)
+int* getNearestIndexes(SPConfig config, SPPoint** queryFeatures, int len, KDTree tree)
+{
+	SP_CONFIG_MSG configMsg;
+	int *ret, k, nearImgNum, iNum, *nearestImagesFeat, *imgScores, i;
+	if(!config){
+		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
+		return NULL;
+	}
+	iNum = spConfigGetNumOfImages(config, &configMsg);
+	k = spConfigGetNumOfSimilarFeatures(config, &msg);
+	nearImgNum = spConfigGetNumOfSimilarImages(config, &msg);
+	if(!(nearestImagesFeat = (int*)malloc((k+1)*sizeof(int)))){
+		return NULL;
+	}
+	if(!(imgScores = (int*)malloc(iNum*sizeof(int)))){
+		free(nearestImagesFeat);
+		return NULL;
+	}
+	memset(imgScores, 0, iNum);
+	for(i=0;i<len;i++){
+		if(spKDTreeKNN(tree, queryFeatures[i], k, nearestImagesFeat)<0){
+			free(nearestImagesFeat);
+			free(imgScores);
+			return NULL;
+		}
+		while(!(*nearestImagesFeat==-1)){
+			imgScores[*(nearestImagesFeat++)]++;
+		}
+	}
+	ret =  getHighestIndexes(imgScores, iNum, nearImgNum)
+	free(nearestImagesFeat);
+	free(imgScores);
+	return ret;
+}
+
+int* getHighestIndexes(int* buff, int len, int k)
+{
+	int i, *ret;
+	SPBPQueue queue;
+	SP_BPQUEUE_MSG queueMsg;
+	BPQueueElement tempElement;
+	if(!(ret=(int*)malloc((k+1)*sizeof(int)))){
+		spLoggerPrintError(MSG_LOG_AUX_ALLOC_ERR, __FILE__, __func__, __LINE__);
+		return NULL;
+	}
+	if(!(queue = spBPQueueCreate(k))){
+		/* No need to check for invalid argument return messages  thanks to this test*/
+		free(ret);
+		return NULL;
+	}
+	for(i=0;i<len;i++)
+	{
+		spBPQueueEnqueue(queue, i, 1.0/((double)(buff[i])));
+	}
+	for(i=0;i<k;i++)
+	{
+		queueMsg = spBPQueuePeek(queue,&tempElement);
+		if(queueMsg==SP_BPQUEUE_EMPTY) { break; }
+		ret[i] = tempElement.index;
+		spBPQueueDequeue(queue); /* No need to check if empty since we already checked it */
+	}
+	ret[i]=-1;
+	spBPQueueDestroy(queue);
+	return ret;
+}
+
+bool printNearestIndexes(SPConfig config, ImageProc* imPr, char* qPath, int* indexes)
 {
 	SP_CONFIG_MSG configMsg;
 	char bestPath[MAX_PATH_LENGTH+1];
+	if(!config){
+		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
+		return false;
+	}
 	bool useMinGui = spConfigMinimalGui(config, &configMsg);
-	/* TODO check message? */
 	if(!useMinGui)
 	{
 		printf(OUT_TITLE, qPath);
@@ -327,7 +422,6 @@ void printNearestIndexes(SPConfig config, ImageProc* imPr, char* qPath, int* ind
 	{
 		memset(bestPath, NULL_CHAR, MAX_PATH_LENGTH+1);
 		configMsg = spConfigGetImagePath(bestPath, config, *indexes);
-		/* TODO check message? */
 		if(useMinGui)
 		{
 		imPr->showImage(bestPath);
@@ -336,4 +430,5 @@ void printNearestIndexes(SPConfig config, ImageProc* imPr, char* qPath, int* ind
 		}
 		indexes++;
 	}
+	return true;
 }
