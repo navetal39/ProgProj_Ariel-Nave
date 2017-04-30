@@ -3,9 +3,9 @@
 #include "SPBPriorityQueue.h"
 
 /**
- * KDTree summary
+ * kd_tree summary
  *
- * the KDTree contains inforamtion of points
+ * the kd_tree contains inforamtion of points
  * the leaves in the tree represents points and contains their data
  * the internal nodes are for splitting the tree by certain value
  *

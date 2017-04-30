@@ -8,12 +8,14 @@
 
 
 
-#define ERASE_QUEUE(queue) do{\
-        while(!spBPQueueIsEmpty((queue))){\
-            spBPQueueDequeue((queue));\
-        }\
-        spBPQueueDestroy((queue));\
-    }while(0);
+#define ERASE_QUEUE(queue) \
+do{ \
+    while(!spBPQueueIsEmpty((queue))) \
+    { \
+        spBPQueueDequeue((queue)); \
+    } \
+    spBPQueueDestroy((queue)); \
+} while(0);
 
 void spKDTreeDestroy(KDTree tree) {
     if (tree != NULL) {
@@ -125,20 +127,20 @@ KDTree spKDTreeCreateRecursive(SPKDArray* array , SP_KDT_SPLIT what_method, int 
     new_subtree->left = spKDTreeCreateRecursive(left_array, what_method, split_dim);
     if ((new_subtree->left) == NULL) {
         printf("malloc fail :(\n");
-        spKDArrayDestroy(array);
+        spKDArrayDestroy(array, array->num_points, array->dim);
         free(new_subtree);
         return NULL;
     }
     new_subtree->right = spKDTreeCreateRecursive(right_array, what_method, split_dim);
     if ((new_subtree->right) == NULL) {
         printf("malloc fail :(\n");
-        spKDArrayDestroy(array);
+        spKDArrayDestroy(array, array->num_points, array->dim);
         spKDTreeDestroy(new_subtree->left);
         free(new_subtree);
         return NULL;
     }
 
-    spKDArrayDestroy(array);
+    spKDArrayDestroy(array, array->num_points, array->dim);
     return new_subtree;
 }
 
@@ -147,7 +149,7 @@ KDTree spKDTreeCreate(SPPoint** points, int length,  SP_KDT_SPLIT what_method) {
     SPKDArray* array;
     array = spKDArrayCreate(points, length);
     if (array == NULL) {
-        return -1;
+        return NULL;
     }
     return spKDTreeCreateRecursive(array, what_method, -1);
 }
@@ -213,7 +215,7 @@ int spKDTreeKNN(KDTree tree, SPPoint* query, int k, int* bestIndices) {
 
     SPBPQueue* queue;
     int i, j, error_flag;
-    BPQueueElement* tempElement
+    BPQueueElement* tempElement;
 
     tempElement = (BPQueueElement*)malloc(sizeof(BPQueueElement));
     if (tempElement == NULL) {
@@ -245,14 +247,12 @@ int spKDTreeKNN(KDTree tree, SPPoint* query, int k, int* bestIndices) {
     return 0;
 }
 
-/*
+
 int main() {
 
     KDTree kdtree;
     SPPoint* query_point;
     double temp_data[3];
-    BPQueueElement* out_of_queue;
-    int tempSize = 0;
     int* int_arr;
 
     int_arr = (int*)malloc(sizeof(int) * 3);
@@ -304,13 +304,14 @@ int main() {
         spPointDestroy(query_point);
         return true;
     }
-    i = spKDTreeKNN(kdtree, query_point, 2);
+    i = spKDTreeKNN(kdtree, query_point, 2, int_arr);
+    printf("~~~~~~~~~~~~~~~~~hello : int_arr[0] = %d , int_arr[1] = %d , int_arr[2] = %d ", int_arr[0], int_arr[1], int_arr[2]);
     free(int_arr);
     spPointDestroy(query_point);
     spKDTreeDestroy(kdtree);
     return true;
 }
-*/
+
 
 
 

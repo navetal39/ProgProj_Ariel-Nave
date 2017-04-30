@@ -53,7 +53,7 @@ int spKDArrayCompare(const void *val1, const void *val2) {
 void spKDArrayDestroy(SPKDArray* array, int num_points, int dim) {
 
 	if (array != NULL) {
-		if (length != -2) {
+		if (num_points != -2) {
 			destroyPointsArray(array->points_array, num_points);
 		}
 		if (dim != -2) {
@@ -420,7 +420,10 @@ int main() {
 
 
 
-
+int main()
+{
+	return 0;
+}
 
 
 

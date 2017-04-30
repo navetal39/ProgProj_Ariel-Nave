@@ -5,11 +5,11 @@
 
 
 /**
- * KDArray summary
+ * kd_array summary
  *
- * the KDArray contains inforamtion of points
- * the KDArray has an array of (pointers to) points (numbered (0 ,......, num_points-1))
- * the KDArray has an integer matrix (each integer represents a point) -
+ * the kd_array contains inforamtion of points
+ * the kd_array has an array of (pointers to) points (numbered (0 ,......, num_points-1))
+ * the kd_array has an integer matrix (each integer represents a point) -
  * where the i'th line is sorted according to the i'th dimension of the represented points 
  *
  *
