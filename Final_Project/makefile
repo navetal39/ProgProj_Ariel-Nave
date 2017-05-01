@@ -4,7 +4,6 @@ CPP = g++
 OBJS = SPPoint.o SPBPriorityQueue.o SPLogger.o SPConfig.o SPImageProc.o \
   SPKDArray.o SPKDTree.o main_aux.o main.o \
 
-#The executabel filename
 EXEC = SPCBIR
 INCLUDEPATH=/usr/local/lib/opencv-3.1.0/include/
 LIBPATH=/usr/local/lib/opencv-3.1.0/lib/
