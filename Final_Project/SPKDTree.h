@@ -1,6 +1,10 @@
+
 #include "SPPoint.h"
 #include "SPKDArray.h"
 #include "SPBPriorityQueue.h"
+
+#define LOG_ERR_MSG_NO_METH "Illegal Split Method - can not procceed"
+#define LOG_ERR_MSG_EMPTY_ARR "Invalid array supplied - can not procceed"
 
 /**
  * kd_tree summary
@@ -12,12 +16,17 @@
  *
  * The following functions are supported:
  *
- * spKDTreeDestroy               - frees all memory connected to a given kd_tree
- * spKDTreeGetSplitDimension        - get the splitting dimension according to the splitting method
- * spKDTreeCreateRecursive        - creates new kd_tree recursively from a given kd_array
- * spKDTreeCreate                - creates new kd_tree from given array of (pointers to) points 
- * spKDTreeKNNRecursive                  - filling a given queue with the closest points in a tree to a given query
- * KNN                      - filling integer array with the indexes of the k closest to query
+ * spKDTreeGetDim                     - a getter for the dimension of a kd_tree node (root) 
+ * spKDTreeGetValue                   - a getter for the value of a kd_tree node (root)
+ * spKDTreeGetLeft                    - a getter for the left subtree of a kd_tree node (root)
+ * spKDTreeGetRight                   - a getter for the right subtree of a kd_tree node (root)
+ * spKDTreeGetData                    - a getter for the data of a kd_tree node (root)
+ * spKDTreeDestroy                    - frees all memory connected to a given kd_tree
+ * spKDTreeGetSplitDimension          - get the splitting dimension according to the splitting method
+ * spKDTreeCreateRecursive            - creates new kd_tree recursively from a given kd_array
+ * spKDTreeCreate                     - creates new kd_tree from given array of (pointers to) points 
+ * spKDTreeKNNRecursive               - filling a given queue with the closest points in a tree to a given query
+ * KNN                                - filling integer array with the indexes of the k closest to query
  *
  */
 
@@ -40,6 +49,52 @@ typedef enum sp_kdt_split_method {
 	SP_KD_SPLIT_INCREMENTAL,
 	SP_KD_SPLIT_UNKNOWN
 } SP_KDT_SPLIT;
+
+/**
+ * A getter for the dimension of a kd_tree node (root)
+ *
+ * @param tree - The source kd_tree
+ * @return
+ * The Dimension of the node (splitting dimension for internal nodes, and -1 otherwise)
+ */
+int spKDTreeGetDim(KDTree tree);
+
+/**
+ * A getter for the value of a kd_tree node (root)
+ *
+ * @param tree - The source kd_tree
+ * @return
+ * The Median Value of the node (median value for internal nodes, and -1 otherwise (yes, it is legal value, it is ok...))
+ */
+double spKDTreeGetValue(KDTree tree);
+
+/**
+ * A getter for the left subtree of a kd_tree node (root)
+ *
+ * @param tree - The source kd_tree
+ * @return
+ * The left subtree of the node
+ */
+KDTree spKDTreeGetLeft(KDTree tree);
+
+/**
+ * A getter for the right subtree of a kd_tree node (root)
+ *
+ * @param tree - The source kd_tree
+ * @return
+ * The right subtree of the node
+ */
+KDTree spKDTreeGetRight(KDTree tree);
+
+/**
+ * A getter for the data of a kd_tree node (root)
+ *
+ * @param tree - The source kd_tree
+ * @return
+ * The data of the node (NULL for internal nodes, and (pointer to) point in leaves)
+ */
+SPPoint* spKDTreeGetData(KDTree tree);
+
 /**
  * Free all memory related to a kd_array
  * @param tree  - the kd_tree to destroy

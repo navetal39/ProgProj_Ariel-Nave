@@ -1,6 +1,10 @@
 #ifndef SPBPRIORITYQUEUE_H_
 #define SPBPRIORITYQUEUE_H_
 #include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
 
 /**
  * SP Bounded Priority Queue summary

@@ -1,8 +1,4 @@
 #include "SPPoint.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-
 struct sp_point_t {
 	int index;
 	int dim;

@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h> /* for isdigit */
-#include "SPLogger.h"
 #include "SPConfig.h"
 
 struct sp_config_t{
@@ -20,7 +15,6 @@ struct sp_config_t{
 	bool useMinGUI;
 	int logLvl;
 	char* logFile;
-	bool allowFeats;
 };
 /********************/
 /* Creating methods */
@@ -48,7 +42,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		fclose(cfgFile);
 		return NULL;
 	}
-	memset(cfgFile, 0, sizeof(struct sp_config_t));
+	memset(cfg, 0, sizeof(struct sp_config_t));
 	spConfigSetDefaults(cfg, msg);
 	while(true){
 		if(!(line = (char*)malloc((MAX_LINE_SIZE+2)*sizeof(char))))	{
@@ -73,22 +67,7 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 	if(readAll){
 		*msg = spConfigCheckAllSet(cfg);
 		if(*msg != SP_CONFIG_SUCCESS){
-			switch(*msg){
-				case SP_CONFIG_MISSING_DIR:
-					missing = VARN_IMG_DIR;
-					break;
-				case SP_CONFIG_MISSING_PREFIX:
-					missing = VARN_IMG_PRE;
-					break;
-				case SP_CONFIG_MISSING_SUFFIX:
-					missing = VARN_IMG_SUF;
-					break;
-				case SP_CONFIG_MISSING_NUM_IMAGES:
-					missing = VARN_IMG_NUM;
-					break;
-				default:
-					break;
-			}
+			GET_MISSING(*msg);
 			printf(ERR_MSG_UNSET_PARAM, filename, lineNum-1, missing);
 			spConfigDestroy(cfg);
 			return NULL;
@@ -97,7 +76,6 @@ SPConfig spConfigCreate(const char* filename, SP_CONFIG_MSG* msg)
 		spConfigDestroy(cfg); 
 		return NULL;
 	}
-	cfg->allowFeats = true;
 	return cfg;
 }
 void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg){
@@ -126,7 +104,6 @@ void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg){
 	config->splitMethod = DEFAULT_SPLIT_METHOD;
 	config->logLvl = DEFAULT_LOG_LEVEL;
 	config->logFile = defLogFile;
-	config->allowFeats = false;
 	config->imgDirSet = false;
 	config->imgPreSet = false;
 	config->imgSufSet = false;
@@ -134,7 +111,8 @@ void spConfigSetDefaults(SPConfig config, SP_CONFIG_MSG* msg){
 	*msg = SP_CONFIG_SUCCESS;
 }
 
-void spConfigParseAndSet(SPConfig cfg, char* line, const char* fileName, int lineNum, SP_CONFIG_MSG* msg){
+void spConfigParseAndSet(SPConfig cfg, char* line, const char* fileName,
+	int lineNum, SP_CONFIG_MSG* msg){
 	if(msg==NULL){ return; }
 	char *var = NULL, *val = NULL;
 	spConfigParseLine(line, &var, &val, msg);
@@ -165,7 +143,8 @@ void spConfigParseAndSet(SPConfig cfg, char* line, const char* fileName, int lin
 	
 }
 
-void spConfigParseLine(char* line, char** varName, char** valStr, SP_CONFIG_MSG* msg)
+void spConfigParseLine(char* line, char** varName, char** valStr,
+	SP_CONFIG_MSG* msg)
 {
 	char *varNameH, *valStrH, *shouldBeNull;
 	char *varNameT, *valStrT;
@@ -213,8 +192,9 @@ void spConfigParseLine(char* line, char** varName, char** valStr, SP_CONFIG_MSG*
 		*msg = SP_CONFIG_INVALID_STRING;
 		return;		
 	}
-	if(shouldBeNull){
-		/* 2 or more set chars */
+	if(shouldBeNull || line[strlen(varNameH)+1]==SET_CHAR){
+		/* 2 or more set chars - 1st cond. is for seperated set chars,
+			2nd cond. is for "==" or longer*/
 		*msg = SP_CONFIG_INVALID_STRING;
 		return;
 	}
@@ -231,64 +211,37 @@ void spConfigAnalizeAndSet(SPConfig cfg, char* var, char* val, SP_CONFIG_MSG* ms
 	char* valDup;
 	if(msg==NULL){ return; }
 	if(!(valDup = (char*)malloc((strlen(val)+1)*sizeof(char)))){
-		*msg = SP_CONFIG_ALLOC_FAIL;
-		return;
+		*msg = SP_CONFIG_ALLOC_FAIL; return;
 	}
 	strcpy(valDup, val);
 	SP_KDT_SPLIT splt;
-	if(!strcmp(var,VARN_IMG_DIR)){  s=true;
-		spConfigSetImgDir(cfg, valDup, msg); isStr=true;
-	}
-	if(!strcmp(var,VARN_IMG_PRE)){ s=true;
-		spConfigSetImgPrefix(cfg, valDup, msg); isStr=true;
-	}
-	if(!strcmp(var,VARN_IMG_SUF)){ s=true;
-		spConfigSetImgSuffix(cfg, valDup, msg); isStr=true;
-	}
-	if(!strcmp(var,VARN_IMG_NUM)){ s=true;
-		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
-		else 		{spConfigSetNumOfImages(cfg, atoi(val), msg);}
-	}
-	if(!strcmp(var,VARN_PCA_DIM)){ s=true;
-		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
-		else 		{spConfigSetPCADim(cfg, atoi(val), msg);}
-	}
-	if(!strcmp(var,VARN_PCA_FIL)){ s=true;
-		spConfigSetPCAFile(cfg, valDup, msg); isStr=true;
-	}
-	if(!strcmp(var,VARN_FTR_NUM)){ s=true;
-		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
-		else 		{spConfigSetNumOfFeatures(cfg, atoi(val), msg);}
-	}
-	if(!strcmp(var,VARN_EXT_MOD)){ s=true;
-		if(!isBool)	{*msg = SP_CONFIG_INVALID_STRING;}
-		else 		{spConfigSetExtractionMode(cfg, strcmp(val,FALSE_STR), msg);}
-	}
-	if(!strcmp(var,VARN_SIM_NUM)){ s=true;
-		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
-		else 		{spConfigSetNumOfSimilarImages(cfg, atoi(val), msg);}
-	}
+	COMPARE_AND_SET_STR(VARN_IMG_DIR, spConfigSetImgDir);
+	COMPARE_AND_SET_STR(VARN_IMG_PRE, spConfigSetImgPrefix);
+	COMPARE_AND_SET_STR(VARN_IMG_SUF, spConfigSetImgSuffix);
+	COMPARE_AND_SET_STR(VARN_PCA_FIL, spConfigSetPCAFile);
+	COMPARE_AND_SET_STR(VARN_LOG_FIL, spConfigSetLogFile);
+	COMPARE_AND_SET(VARN_IMG_NUM, isDec, SP_CONFIG_INVALID_INTEGER,
+		spConfigSetNumOfImages, atoi(val));
+	COMPARE_AND_SET(VARN_PCA_DIM, isDec, SP_CONFIG_INVALID_INTEGER,
+		spConfigSetPCADim, atoi(val));
+	COMPARE_AND_SET(VARN_FTR_NUM, isDec, SP_CONFIG_INVALID_INTEGER,
+		spConfigSetNumOfFeatures, atoi(val));
+	COMPARE_AND_SET(VARN_EXT_MOD, isBool, SP_CONFIG_INVALID_STRING,
+		spConfigSetExtractionMode, strcmp(val,FALSE_STR));
+	COMPARE_AND_SET(VARN_SIM_NUM, isDec, SP_CONFIG_INVALID_INTEGER,
+		spConfigSetNumOfSimilarImages, atoi(val));
+	COMPARE_AND_SET(VARN_KNN_NUM, isDec, SP_CONFIG_INVALID_INTEGER,
+		spConfigSetNumOfSimilarFeatures, atoi(val));
+	COMPARE_AND_SET(VARN_MIN_GUI, isBool, SP_CONFIG_INVALID_STRING,
+		spConfigSetMinimalGui, strcmp(val,FALSE_STR));
+	COMPARE_AND_SET(VARN_LOG_LVL, isDec, SP_CONFIG_INVALID_INTEGER,
+		spConfigSetLogLevel, atoi(val));
 	if(!strcmp(var,VARN_SPL_MTD)){ s=true;
 		if(!strcmp(val,SPLIT_STR_RND)){splt = SP_KD_SPLIT_RANDOM;		s2=true;}
 		if(!strcmp(val,SPLIT_STR_MAX)){splt = SP_KD_SPLIT_MAX_SPREAD;	s2=true;}
 		if(!strcmp(val,SPLIT_STR_INC)){splt = SP_KD_SPLIT_INCREMENTAL;	s2=true;}
 		if(s2)		{spConfigSetSplitMethod(cfg, splt, msg);}
 		else		{*msg = SP_CONFIG_INVALID_STRING; }
-	}
-	if(!strcmp(var,VARN_KNN_NUM)){ s=true;
-		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
-		else 		{spConfigSetNumOfSimilarFeatures(cfg, atoi(val), msg);}
-	}
-	if(!strcmp(var,VARN_MIN_GUI)){ s=true;
-		if(!isBool)	{*msg = SP_CONFIG_INVALID_STRING;}
-		else 		{spConfigSetMinimalGui(cfg, strcmp(val,FALSE_STR), msg);}
-	}
-	if(!strcmp(var,VARN_LOG_LVL)){ s=true;
-		if(!isDec)	{*msg = SP_CONFIG_INVALID_INTEGER;}
-		else 		{spConfigSetLogLevel(cfg, atoi(val), msg);}
-	}
-	if(!strcmp(var,VARN_LOG_FIL)){ s=true;
-		spConfigSetLogFile(cfg, valDup, msg); isStr=true;
 	}
 	if(!s) { *msg = SP_CONFIG_INVALID_ARGUMENT; };
 	if(!isStr) {free(valDup);}
@@ -315,6 +268,7 @@ char* spConfigGetImgDir(const SPConfig config, SP_CONFIG_MSG* msg)
 void spConfigSetImgDir(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 {
 	if(msg==NULL){ return; }
+	free(config->imgDir);
 	config->imgDir = val;
 	config->imgDirSet = true;
 	*msg = SP_CONFIG_SUCCESS;
@@ -327,6 +281,7 @@ char* spConfigGetImgPrefix(const SPConfig config, SP_CONFIG_MSG* msg)
 void spConfigSetImgPrefix(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 {
 	if(msg==NULL){ return; }
+	free(config->imgPre);
 	config->imgPre = val;
 	config->imgPreSet = true;
 	*msg = SP_CONFIG_SUCCESS;
@@ -340,8 +295,8 @@ void spConfigSetImgSuffix(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 {
 	if(msg==NULL){ return; }
 	if(!strcmp(val, SUF_STR_JPG) || !strcmp(val, SUF_STR_PNG) || 
-		!strcmp(val, SUF_STR_BMP) || !strcmp(val, SUF_STR_GIF) ||
-		(!strcmp(val,SUF_STR_FTR)&&config->allowFeats)){
+		!strcmp(val, SUF_STR_BMP) || !strcmp(val, SUF_STR_GIF)){
+		free(config->imgSuf);
 		config->imgSuf = val;
 		config->imgSufSet = true;
 		*msg = SP_CONFIG_SUCCESS;
@@ -509,7 +464,6 @@ void spConfigSetLogFile(const SPConfig config, char* val, SP_CONFIG_MSG* msg)
 SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
 		int index)
 {
-	int dirLen, preLen, iLen, sufLen, totalLen, temp;
 	if(imagePath == NULL || config == NULL)
 	{
 		return SP_CONFIG_INVALID_ARGUMENT;
@@ -518,42 +472,34 @@ SP_CONFIG_MSG spConfigGetImagePath(char* imagePath, const SPConfig config,
 	{
 		return SP_CONFIG_INDEX_OUT_OF_RANGE;
 	}
-	temp = index; iLen = 1; 
-	while(temp > 9)
+	sprintf(imagePath, "%s%s%d%s", config->imgDir,
+	 		config->imgPre, index, config->imgSuf);
+	return SP_CONFIG_SUCCESS;
+}
+
+SP_CONFIG_MSG spConfigGetFeatsFilePath(char* featsPath, const SPConfig config,
+		int index)
+{
+	if(featsPath == NULL || config == NULL)
 	{
-		temp /= 10; iLen++;
+		return SP_CONFIG_INVALID_ARGUMENT;
 	}
-	dirLen = strlen(config->imgDir);
-	preLen = strlen(config->imgPre);
-	sufLen = strlen(config->imgSuf);
-	totalLen = dirLen + preLen + iLen + sufLen + 1;
-	memset(imagePath, NULL_CHAR, totalLen);
-
-	strcpy(imagePath, config->imgDir);
-	strcpy(imagePath + (dirLen), config->imgPre);
-	sprintf(imagePath + (dirLen + preLen), "%d", index);
-	strcpy(imagePath + (dirLen + preLen + iLen), config->imgSuf);
-
+	if(index > config->imgNum || index < 0)
+	{
+		return SP_CONFIG_INDEX_OUT_OF_RANGE;
+	}
+	sprintf(featsPath, "%s%s%d%s", config->imgDir,
+	 		config->imgPre, index, SUF_STR_FTR);
 	return SP_CONFIG_SUCCESS;
 }
 
 SP_CONFIG_MSG spConfigGetPCAPath(char* pcaPath, const SPConfig config)
 {
-	int dirLen;
-	int pcaLen;
-	int totalLen;
 	if(pcaPath == NULL || config == NULL)
 	{
 		return SP_CONFIG_INVALID_ARGUMENT;
 	}
-	dirLen = strlen(config->imgDir);
-	pcaLen = strlen(config->pcaFile);
-	totalLen = dirLen + pcaLen + 1;
-	memset(pcaPath, NULL_CHAR, totalLen);
-
-	strcpy(pcaPath, config->imgDir);
-	strcpy(pcaPath + (dirLen), config->pcaFile);
-
+	sprintf(pcaPath, "%s%s",config->imgDir, config->pcaFile);
 	return SP_CONFIG_SUCCESS;
 }
 /****************************************************/
@@ -588,14 +534,5 @@ void spConfigDestroy(SPConfig config)
 		free(config->pcaFile);
 		free(config->logFile);
 		free(config);
-	}	
-}
-
-int main()
-{
-	SPConfig cfg;
-	SP_CONFIG_MSG msg;
-	cfg = spConfigCreate("spcbir.config",&msg);
-	spConfigDestroy(cfg);
-	return 0;
+	}
 }

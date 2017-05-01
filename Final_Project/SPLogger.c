@@ -1,7 +1,4 @@
 #include "SPLogger.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
 
 //File open mode
 #define SP_LOGGER_OPEN_MODE "w"
@@ -53,6 +50,8 @@ void spLoggerDestroy() {
 SP_LOGGER_MSG spLoggerPrintError(const char* msg, const char* file,
 		const char* function, const int line)
 {
+	if(!logger) { return SP_LOGGER_UNDIFINED; }
+	if(!msg || !file || !function || line < 0) { return SP_LOGGER_INVAlID_ARGUMENT; }
 	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_TTL_F, LOG_MSG_TTL_ERR);
 	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_FIL, file);
 	FPRINTF_AND_CHECK(logger->outputChannel, LOG_MSG_FLD_FNC, function);
@@ -65,7 +64,7 @@ SP_LOGGER_MSG spLoggerPrintWarning(const char* msg, const char* file,
 		const char* function, const int line)
 {
 	if(!logger) { return SP_LOGGER_UNDIFINED; }
-	if(!msg) { return SP_LOGGER_INVAlID_ARGUMENT; }
+	if(!msg || !file || !function || line < 0) { return SP_LOGGER_INVAlID_ARGUMENT; }
 	if(logger->level == SP_LOGGER_ERROR_LEVEL)
 	{
 		return SP_LOGGER_SUCCESS; 
@@ -96,7 +95,7 @@ SP_LOGGER_MSG spLoggerPrintDebug(const char* msg, const char* file,
 		const char* function, const int line)
 {
 	if(!logger) { return SP_LOGGER_UNDIFINED; }
-	if(!msg) { return SP_LOGGER_INVAlID_ARGUMENT; }
+	if(!msg || !file || !function || line < 0) { return SP_LOGGER_INVAlID_ARGUMENT; }
 	if(logger->level != SP_LOGGER_DEBUG_INFO_WARNING_ERROR_LEVEL)
 	{
 		return SP_LOGGER_SUCCESS;

@@ -6,8 +6,6 @@
 
 #include "SPKDTree.h"
 
-
-
 #define ERASE_QUEUE(queue) \
 do{ \
     while(!spBPQueueIsEmpty((queue))) \
@@ -17,6 +15,41 @@ do{ \
     spBPQueueDestroy((queue)); \
 } while(0);
 
+int spKDTreeGetDim(KDTree tree) {
+    if (tree != NULL) {
+        return tree->dim;
+    }
+    return -1;
+}
+
+double spKDTreeGetValue(KDTree tree) {
+    if (tree != NULL) {
+        return tree->val;
+    }
+    return -1.0;
+}
+
+KDTree spKDTreeGetLeft(KDTree tree) {
+    if (tree != NULL) {
+        return tree->left;
+    }
+    return NULL;
+}
+
+KDTree spKDTreeGetRight(KDTree tree) {
+    if (tree != NULL) {
+        return tree->right;
+    }
+    return NULL;
+}
+
+SPPoint* spKDTreeGetData(KDTree tree) {
+    if (tree != NULL) {
+        return tree->data;
+    }
+    return NULL;
+}
+
 void spKDTreeDestroy(KDTree tree) {
     if (tree != NULL) {
         spPointDestroy(tree->data);
@@ -24,6 +57,7 @@ void spKDTreeDestroy(KDTree tree) {
         spKDTreeDestroy(tree->right);
         free(tree);
     }
+    /* No need to print warning into log since it's normal to send NULL to this method (leaves) */
 }
 
 int spKDTreeGetSplitDimension(SPKDArray* array, SP_KDT_SPLIT what_method, int inc_index) {
@@ -52,36 +86,32 @@ int spKDTreeGetSplitDimension(SPKDArray* array, SP_KDT_SPLIT what_method, int in
             }
         }
         if (tmp__curr == -1) {
+            spLoggerPrintError(LOG_ERR_MSG_EMPTY_ARR, __FILE__,__func__,__LINE__);
             return -1;
         }
         return split_dim;
     }
-    // means we failed....
+    spLoggerPrintError(LOG_ERR_MSG_NO_METH, __FILE__,__func__,__LINE__);
     return -1;
 }
 
-
+int temp_tomer = 0;
 
 KDTree spKDTreeCreateRecursive(SPKDArray* array , SP_KDT_SPLIT what_method, int inc_index) {
 
     KDTree new_subtree;
     SPKDArray* left_array;
     SPKDArray* right_array;
-
-    int error_flag = 0;
-    int split_dim = -1;
-    int median_index = -1;
+    int error_flag = 0, split_dim = -1, median_index = 0;
     double median_value;
 
     new_subtree = (KDTree)malloc(sizeof(KDTreeNode));
     if (new_subtree == NULL) {
-        printf("malloc fail :(\n");
+        spLoggerPrintError(LOG_ERR_MSG_ALLOC, __FILE__,__func__,__LINE__);
         spKDArrayDestroy(array, array->num_points, array->dim);
         return NULL;
     }
-
-    /// if the subtree is a leaf
-    if (array->num_points == 1) {
+    if ((array->num_points) == 1) { // if the subtree is a leaf
         new_subtree->dim = -1;
         new_subtree->val = -1;
         new_subtree->left = NULL;
@@ -90,56 +120,53 @@ KDTree spKDTreeCreateRecursive(SPKDArray* array , SP_KDT_SPLIT what_method, int 
         spKDArrayDestroy(array, array->num_points, array->dim);
         return new_subtree;
     }
-
-    if ((split_dim = spKDTreeGetSplitDimension(array, what_method, inc_index)) == -1) {
+     if ((split_dim = spKDTreeGetSplitDimension(array, what_method, inc_index)) == -1) {
         spKDArrayDestroy(array, array->num_points, array->dim);
         free(new_subtree);
         return NULL;
-    }
+    } 
     median_index = array->sort_mat[split_dim][(array->num_points - 1) / 2];
     median_value = spPointGetAxisCoor(array->points_array[median_index], split_dim);
     new_subtree->dim = split_dim;
     new_subtree->val = median_value;
+    new_subtree->data = NULL;
 
     left_array = (SPKDArray*)malloc(sizeof(SPKDArray));
     if (left_array == NULL) {
-        printf("malloc fail :(\n");
+        spLoggerPrintError(LOG_ERR_MSG_ALLOC, __FILE__,__func__,__LINE__);
         spKDArrayDestroy(array, array->num_points, array->dim);
         free(new_subtree);
         return NULL;
     }
     right_array = (SPKDArray*)malloc(sizeof(SPKDArray));
     if (right_array == NULL) {
-        printf("malloc fail :(\n");
+        spLoggerPrintError(LOG_ERR_MSG_ALLOC, __FILE__,__func__,__LINE__);
         spKDArrayDestroy(array, array->num_points, array->dim);
         free(new_subtree);
         free(left_array);
         return NULL;
     }
-
     if ((error_flag = spKDArraySplit(array, left_array, right_array, split_dim)) != 0) {
-        // in this case no need to free left_array and tight_array because split frees them...
+        // in this case no need to free left_array and right_array because split frees them...
         spKDArrayDestroy(array, array->num_points, array->dim);
         free(new_subtree);
         return NULL;
     }
-
     new_subtree->left = spKDTreeCreateRecursive(left_array, what_method, split_dim);
     if ((new_subtree->left) == NULL) {
-        printf("malloc fail :(\n");
+        spLoggerPrintError(LOG_ERR_MSG_ALLOC, __FILE__,__func__,__LINE__);
         spKDArrayDestroy(array, array->num_points, array->dim);
         free(new_subtree);
         return NULL;
     }
     new_subtree->right = spKDTreeCreateRecursive(right_array, what_method, split_dim);
     if ((new_subtree->right) == NULL) {
-        printf("malloc fail :(\n");
+        spLoggerPrintError(LOG_ERR_MSG_ALLOC, __FILE__,__func__,__LINE__);
         spKDArrayDestroy(array, array->num_points, array->dim);
         spKDTreeDestroy(new_subtree->left);
         free(new_subtree);
         return NULL;
     }
-
     spKDArrayDestroy(array, array->num_points, array->dim);
     return new_subtree;
 }
@@ -162,18 +189,15 @@ int spKDTreeKNNRecursive(SPBPQueue* queue, KDTree curr_node, SPPoint* query) {
     double query_relevant_dim_value;
 
 
-    if ((queue == NULL) || (query == NULL)) {
+    if ((queue == NULL) || (query == NULL) || (curr_node)==NULL) {
+        spLoggerPrintError(LOG_ERR_MSG_BAD_ARGS, __FILE__,__func__,__LINE__);
         return -1;
     }
-    if (NULL == curr_node) {
-        //todo error
-        return -1;
-    }
-
     // if curr_node is a leaf
     if (curr_node->dim == -1) {
         curr_node_dist = spPointL2SquaredDistance(curr_node->data , query);
         if (spBPQueueEnqueue(queue, spPointGetIndex(curr_node->data), curr_node_dist) == SP_BPQUEUE_INVALID_ARGUMENT) {
+            spLoggerPrintError(LOG_ERR_MSG_BAD_ARGS, __FILE__,__func__,__LINE__);
             return -1;
         }
         return 0;
@@ -192,7 +216,6 @@ int spKDTreeKNNRecursive(SPBPQueue* queue, KDTree curr_node, SPPoint* query) {
         }
         flag_other_subtree = 1;
     }
-
     // Now maybe we should go on and search in the second subtree also...
     query_relevant_dim_value = spPointGetAxisCoor(query, curr_node->dim);
     if ((curr_node->val - query_relevant_dim_value) * (curr_node->val - query_relevant_dim_value) < spBPQueueMaxValue(queue)
@@ -225,6 +248,7 @@ int spKDTreeKNN(KDTree tree, SPPoint* query, int k, int* bestIndices) {
     }
     for (i = 0; i < k; i++) {
         if (spBPQueuePeek(queue, &tempElement) != SP_BPQUEUE_SUCCESS) {
+            spLoggerPrintError(LOG_ERR_MSG_BAD_ARGS, __FILE__,__func__,__LINE__);
             for (j = i; j <= k; j++) {
                 bestIndices[j] = -1;
             }
@@ -238,3 +262,30 @@ int spKDTreeKNN(KDTree tree, SPPoint* query, int k, int* bestIndices) {
     bestIndices[k] = -1;
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,10 +1,4 @@
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include "main_aux.h"
-extern "C" {
-	#include "SPBPriorityQueue.h"
-}
 
 using namespace sp;
 
@@ -99,13 +93,13 @@ SPPoint** getFeatures(SPConfig config, ImageProc* imPr, int* totalLen)
 	}
 	c=0;
 	for(i=0; i<iNum; i++){
-		for(j=0; i<lengths[i]; j++){
-			dbFeatsMerged[c] = dbFeats[i][j];
+		for(j=0; j<lengths[i]; j++){
+			dbFeatsMerged[c] = spPointCopy(dbFeats[i][j]);
+			c++;
 		}
-		c++;
 	}
-	free(lengths);
 	destroyPointsArrayArray(dbFeats, iNum, lengths);
+	free(lengths);
 	return dbFeatsMerged;
 }
 SPPoint*** extractDatabaseFeaturesI(SPConfig config, ImageProc* imPr, int dbFeatsLens[])
@@ -163,24 +157,14 @@ SPPoint** getImageFeaturesF(SPConfig config, int index, int* length)
 {
 	SPPoint** ret;
 	int i, toRead[2], dim;
-	char filePath[MAX_PATH_LENGTH+1], *sufNew, *sufBackup,
+	char filePath[MAX_PATH_LENGTH+1],
 		cplxErrMsg[MAX_ERR_MSG_LENGTH+MAX_PATH_LENGTH];
-	SP_CONFIG_MSG configMsg;
 	FILE* file;
 	if(!config){
 		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
 		return NULL;
 	}
-	if(!(sufNew = (char*)malloc(strlen(FEATS_FILE_SUFFIX)*sizeof(char)+1))){
-		spLoggerPrintError(MSG_LOG_AUX_ALLOC_ERR, __FILE__, __func__, __LINE__);
-		return NULL;
-	}
-	strcpy(sufNew, FEATS_FILE_SUFFIX);
-	sufBackup = spConfigGetImgSuffix(config, &configMsg);
-	spConfigSetImgSuffix(config, sufNew, &configMsg);
-	spConfigGetImagePath(filePath, config, index);
-	spConfigSetImgSuffix(config, sufBackup, &configMsg);
-	free(sufNew);
+	spConfigGetFeatsFilePath(filePath, config, index);
 
 	if(!(file=(fopen(filePath, READ_MODE)))){
 		sprintf(cplxErrMsg, MSG_LOG_AUX_OPEN_ERR, filePath);
@@ -250,8 +234,8 @@ bool storeDatabaseFeaturesF(SPConfig config, SPPoint** feats[], int lengths[])
 bool storeImageFeaturesF(SPConfig config, SPPoint* feats[], int length)
 {
 	int i, index, toWrite[2], dim;
-	char filePath[MAX_PATH_LENGTH+1], *sufNew, *sufBackup, cplxErrMsg[MAX_ERR_MSG_LENGTH+MAX_PATH_LENGTH];;
-	SP_CONFIG_MSG configMsg;
+	char filePath[MAX_PATH_LENGTH+1],
+		cplxErrMsg[MAX_ERR_MSG_LENGTH+MAX_PATH_LENGTH];
 	FILE* file;
 	if(!config){
 		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
@@ -262,17 +246,7 @@ bool storeImageFeaturesF(SPConfig config, SPPoint* feats[], int length)
 	toWrite[0]=length; toWrite[1]=dim;
 	index = spPointGetIndex(feats[0]);
 
-	if(!(sufNew = (char*)malloc(strlen(FEATS_FILE_SUFFIX)*sizeof(char)+1)))
-	{
-		spLoggerPrintError(MSG_LOG_AUX_ALLOC_ERR, __FILE__, __func__, __LINE__);
-		return false;
-	}
-	strcpy(sufNew, FEATS_FILE_SUFFIX);
-	sufBackup = spConfigGetImgSuffix(config, &configMsg);
-	spConfigSetImgSuffix(config, sufNew, &configMsg);
-	spConfigGetImagePath(filePath, config, index);
-	spConfigSetImgSuffix(config, sufBackup, &configMsg);
-	free(sufNew);
+	spConfigGetFeatsFilePath(filePath, config, index);
 
 	if(!(file=(fopen(filePath, WRITE_MODE)))){
 		sprintf(cplxErrMsg, MSG_LOG_AUX_OPEN_ERR, filePath);
@@ -322,7 +296,7 @@ bool storeImageFeatureF(FILE* file, char* filePath, SPPoint* feature)
 KDTree makeKDTree(SPConfig config, SPPoint** features, int len)
 {
 	SP_CONFIG_MSG configMsg;
-	spKDTreeSplitMethod meth;
+	SP_KDT_SPLIT meth;
 	if(!config){
 		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
 		return NULL;
@@ -342,14 +316,14 @@ void getQueryPath(char* queryPath, bool isFirstQuery)
 int* getNearestIndexes(SPConfig config, SPPoint** queryFeatures, int len, KDTree tree)
 {
 	SP_CONFIG_MSG configMsg;
-	int *ret, k, nearImgNum, iNum, *nearestImagesFeat, *imgScores, i;
+	int *ret, k, nearImgNum, iNum, *nearestImagesFeat, *nifTemp, *imgScores, i;
 	if(!config){
 		spLoggerPrintError(MSG_LOG_AUX_CFG_NULL, __FILE__, __func__, __LINE__);
 		return NULL;
 	}
 	iNum = spConfigGetNumOfImages(config, &configMsg);
-	k = spConfigGetNumOfSimilarFeatures(config, &msg);
-	nearImgNum = spConfigGetNumOfSimilarImages(config, &msg);
+	k = spConfigGetNumOfSimilarFeatures(config, &configMsg);
+	nearImgNum = spConfigGetNumOfSimilarImages(config, &configMsg);
 	if(!(nearestImagesFeat = (int*)malloc((k+1)*sizeof(int)))){
 		return NULL;
 	}
@@ -357,18 +331,19 @@ int* getNearestIndexes(SPConfig config, SPPoint** queryFeatures, int len, KDTree
 		free(nearestImagesFeat);
 		return NULL;
 	}
-	memset(imgScores, 0, iNum);
+	memset(imgScores, 0, iNum*sizeof(int));
 	for(i=0;i<len;i++){
 		if(spKDTreeKNN(tree, queryFeatures[i], k, nearestImagesFeat)<0){
 			free(nearestImagesFeat);
 			free(imgScores);
 			return NULL;
 		}
-		while(!(*nearestImagesFeat==-1)){
-			imgScores[*(nearestImagesFeat++)]++;
+		nifTemp=nearestImagesFeat;
+		while(!(*nifTemp==-1)){
+			imgScores[*(nifTemp++)]++;
 		}
 	}
-	ret =  getHighestIndexes(imgScores, iNum, nearImgNum)
+	ret =  getHighestIndexes(imgScores, iNum, nearImgNum);
 	free(nearestImagesFeat);
 	free(imgScores);
 	return ret;
@@ -377,7 +352,7 @@ int* getNearestIndexes(SPConfig config, SPPoint** queryFeatures, int len, KDTree
 int* getHighestIndexes(int* buff, int len, int k)
 {
 	int i, *ret;
-	SPBPQueue queue;
+	SPBPQueue* queue;
 	SP_BPQUEUE_MSG queueMsg;
 	BPQueueElement tempElement;
 	if(!(ret=(int*)malloc((k+1)*sizeof(int)))){
@@ -391,7 +366,7 @@ int* getHighestIndexes(int* buff, int len, int k)
 	}
 	for(i=0;i<len;i++)
 	{
-		spBPQueueEnqueue(queue, i, 1.0/((double)(buff[i])));
+		spBPQueueEnqueue(queue, i, 1.0/((double)(buff[i]+1)));
 	}
 	for(i=0;i<k;i++)
 	{

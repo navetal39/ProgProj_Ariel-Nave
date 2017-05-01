@@ -1,7 +1,0 @@
-TODO:
- - Finish logger
- - Implement and test KDTree
- - Implement extraction and storage of features
- - Test minGui
- - Finish unit tests
- - Figure out source of odd error in spConfig

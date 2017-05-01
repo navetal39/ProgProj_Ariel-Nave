@@ -1,0 +1,17 @@
+---ERROR---
+file: sp_logger_unit_test.c
+function: basicLoggerDebugTest
+line: 145
+message: MSG_2
+---WARNING---
+file: sp_logger_unit_test.c
+function: basicLoggerDebugTest
+line: 146
+message: MSG_3
+---INFO---
+message: MSG_4
+---DEBUG---
+file: sp_logger_unit_test.c
+function: basicLoggerDebugTest
+line: 148
+message: MSG_5

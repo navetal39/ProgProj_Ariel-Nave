@@ -1,7 +1,10 @@
-#include <cstring>
 #include "SPImageProc.h"
+#include <cstring>
+#include <cstdio>
+#include <cstdlib>
 extern "C" {
 	#include "SPPoint.h"
+	#include "SPBPriorityQueue.h"
 	#include "SPConfig.h"
 }
 /* Messages */
@@ -9,6 +12,7 @@ extern "C" {
 #define ERR_CFG_OPEN "The%sconfiguration file %s couldn't be open\n"
 #define ERR_CFG_OPEN_D " default "
 #define ERR_CFG_OPEN_C " "
+#define ERR_LOG_OPEN "The logger could not have been initialized. Exitting...\n"
 
 #define MSG_LOG_INIT "Log system has been successfully initialized."
 #define MSG_LOG_INIT_IMPR "Image processor has been successfully set."
@@ -48,21 +52,7 @@ extern "C" {
 		spBPQueueDestroy((queue));\
 	}while(0);
 #define READ_STR(buff) scanf("%s", (buff));
-/* Structs */
-typedef struct sp_img_sift_score{
-	int index;
-	int score;
-}siftScore;
 
-/**
- * A function to be used for sorting image scores in order to fins closest images using local features.
- * 
- * @param x - a pointer to a siftScore struct
- * @param y - a poitner to a siftScore struct
- * 
- * @return the difference between y's score and x's score
- */
-int scoreComp(const void* x, const void* y);
 
 /**
  * Given a path to a configuration file and a boolean flag this method will initialize a config struct
@@ -266,7 +256,7 @@ int* getNearestIndexes(SPConfig config, SPPoint** queryFeatures, int len, KDTree
  * @return
  * NULL if an error occured, otherwise a -1 terminated buffer of the indexes of the highest values in buff, sorted by said value.
  */
-int* getHighestIndexes(int* buff, int len, int k)
+int* getHighestIndexes(int* buff, int len, int k);
 
 /**
  * Given a valid configuration SPConfig struct, an image processor object, a string representing a path and an array

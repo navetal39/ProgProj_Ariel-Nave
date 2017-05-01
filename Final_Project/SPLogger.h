@@ -1,5 +1,8 @@
 #ifndef SPLOGGER_H_
 #define SPLOGGER_H_
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 
 #define LOG_MSG_TTL_F "---%s---\n"

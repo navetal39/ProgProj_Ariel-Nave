@@ -1,8 +1,13 @@
 #ifndef KDARRAY_H_
 #define KDARRAY_H_
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "SPPoint.h"
-
+#include "SPLogger.h"
+#define LOG_ERR_MSG_ALLOC "Memory allocation Failure"
+#define LOG_ERR_MSG_BAD_ARGS "Invalid arguments - Can not procceed"
+#define LOG_WRN_MSG_NO_DESTROY "Destroyer did not get anything to destroy"
 
 /**
  * kd_array summary
@@ -15,13 +20,21 @@
  *
  * The following functions are supported:
  *
- * spKDArrayCompare            - compares 2 integers accorsing two global dimension (refering to represented points)
- * spKDArrayDestroy          - destroys all information connected to a kd_array
- * spKDArrayAllocateArrayFields        - allocates all inforamtion connected to a kd_array
- * spKDArrayCreate          - creates new kd_array and initialize its information
- * spKDArraySplit                    - splits a kd_array into 2 parts, according to a given coordination
- * destroyPointsArray     - destroys array of (pointers to) points in given length
- * destroyIntMatrix           - destroys matrix of integers (with given number of lines)
+ * InitComp                               - creates new CompPoint and initializes the given values to its fields
+ * InitCompArray                          - creates new array of CompPoint which is parallal to a given points array
+ * DestroyCompArray                       - frees all memory related to a CompPoints array
+ * spKDArrayCompare                       - comparator for sorting an array of CompPoints
+ * spKDArrayGetUpperValue                 - getting the upper value of a given integer
+ * spKDArraySetBooleanArray               - setting an array with 0/1 ,for split method use
+ * spKDArrayFillingMaps                   - setting two arrays with values ,for split method use
+ * spKDArraySetPointsArray                - setting the points array for two new kd_arrays
+ * spKDArraySetMatrices                   - setting the integer matrices for two new kd_arrays
+ * spKDArrayDestroy                       - destroys all information connected to a kd_array
+ * spKDArrayAllocateArrayFields           - allocates all inforamtion connected to a kd_array
+ * spKDArrayCreate                        - creates new kd_array and initialize its information
+ * spKDArraySplit                         - splits a kd_array into 2 parts, according to a given coordination
+ * destroyPointsArray                     - destroys array of (pointers to) points in given length
+ * destroyIntMatrix                       - destroys matrix of integers (with given number of lines)
  *
  */
 
@@ -33,17 +46,113 @@ typedef struct sp_kd_array_t {
 	int dim;
 } SPKDArray;
 
-/**
- * comparator for sorting an array of integer (that represents points) by a certain dimension (of the represented points)
- * @param (not exactly) - 2 integers - (a,b) - in the range (0, points_dim -1) (points_dim according to the global array)
- * the comparator compares data[i] (where i is global) of the points: global_array[a], global_array[b]
- * @return
- *  1  - in case global_array[a]->data[i] > global_array[b]->data[i] 
- * -1 - in case global_array[a]->data[i] < global_array[b]->data[i] 
- *  0  - in case global_array[a]->data[i] = global_array[b]->data[i] 
- */
+/** the struct used for sorting points by a certain dimension**/
+typedef struct compare_point_t {
+	SPPoint* point;
+	int index;
+	int dim;
+} CompPoint;
 
+/**
+ * create new CompPoint and initializes the given values to its fields
+ * @param point        - (pointer to) point, will be coppied and putted in field point of CompPoint
+ * 		  index        - will be putted in field index of CompPoint
+ * 		  dim          - will be putted in field dim of CompPoint
+ * @return
+ * a pointer to a new allocated and initialized CompPoint
+ * in case of allocation fail returns NULL
+ */
+CompPoint* InitComp(SPPoint* point, int index, int dim);
+
+/**
+ * create new array of CompPoint which is parallal to a given points array
+ * @param points_array - array of (pointers to) points, will be coppied and putted in field point of the new array,
+ *  the index will be accorsing to the index in points_array
+ * 		  length       - the length of the given array
+ * 		  dim          - the dimension that will be putted in field dim of the whole CompPoints array
+ * @return
+ * a pointer to the start of the (pointers to) CompPoints array
+ * in case of allocation fail returns NULL
+ */
+CompPoint** InitCompArray(SPPoint** points_array, int length, int dim);
+
+/**
+ * Free all memory related to a CompPoints array
+ * @param comp_array  - the CompPoints array need to be destroyed
+ 		  length 	  - the length of the array
+ 	if an object need to be freed is already NULL - nothing happens...
+ */
+void DestroyCompArray(CompPoint** comp_array, int length); 
+
+
+/**
+ * comparator for sorting an array of CompPoints
+ * @param - 2 CompPoints (techniqually (void)* )
+ * the comparator compares the two elements by their value in the dimensions of the elements (((CompPoint.point)->data)[CompPoint.dim])
+ * @return
+ *  1  - ((a.point)->data)[a.dim] > ((b.point)->data)[b.dim]
+ * -1  - ((a.point)->data)[a.dim] < ((b.point)->data)[b.dim] 
+ *  0  - ((a.point)->data)[a.dim] = ((b.point)->data)[b.dim] 
+ */
 int spKDArrayCompare(const void *val1, const void *val2);
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ these are few functions for making the code more modular and readable... ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+/**
+ * getting the upper value of a given integer
+ * @param - n     - integer 
+ * @return
+ * Integer - the upper value of n/2
+ */
+int spKDArrayGetUpperValue(int n);
+
+/**
+ * setting an array with 0/1:
+ * for a point in index i in array:
+ * X[i] = 0  - if the point in index i is lower than the median according to coor dimension
+ * X[i] = -1 - if the point in index i is higher than the median according to coor dimension
+ * @param - array     - the kd_array which we work on (the points are coming from this array) 
+ *		  - X         - the boolean array (techniqually int array) we fill
+ *		  - num_left  - the median index
+ *		  - coor      - the dimension that determines the order of the points (as menrioned in the description)
+ */
+void spKDArraySetBooleanArray(SPKDArray* array, int* X, int num_left, int coor);
+
+/**
+ * setting map1 and map2 with values:
+ * if X[i] = 0:
+ * map1[i] = j; where the point i is the k lowest point (according to coor) ,    map2[i] =-1
+ * if X[i] = 1:
+ * map1[i] = j; where the point i is the k highest point (according to coor),    map2[i] =-1 
+ * @param - array     - the kd_array which we work on (the points are coming from this array) 
+ *		  - X         - boolean array (techniqually int array)
+ *		  - map1      - the int array we fill
+ *		  - map2      - the int array we fill
+ */
+void spKDArrayFillingMaps(SPKDArray* array, int* X, int* map1, int* map2);
+
+/**
+ * setting the points array to the kd_arrays part_1 and part_2
+ * @param - array     - the kd_array which we work on (the points are coming from this array) 
+ *		  - part_1    - kd_array that we fill its point array
+ *		  - part_2    - kd_array that we fill its point array
+ *		  - X         - boolean array (techniqually int array) that indicates part_1/part_2
+ */
+void spKDArraySetPointsArray(SPKDArray* array, SPKDArray* part_1, SPKDArray* part_2, int* X);
+
+/**
+ * setting the integer matrices to the kd_arrays part_1 and part_2
+ * @param - array     - the kd_array which we work on (the points are coming from this array) 
+ *		  - part_1    - kd_array that we fill its point array
+ *		  - part_2    - kd_array that we fill its point array
+ *		  - X         - boolean array (techniqually int array) that indicates part_1/part_2
+ *		  - map1      - int array - helps to determine part_1 matrix values
+ *		  - map2      - int array - helps to determine part_2 matrix values
+ */
+void spKDArraySetMatrices(SPKDArray* array, SPKDArray* part_1, SPKDArray* part_2, int* X, int* map1, int* map2);
+
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ end of this kind of functions here ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 /**

@@ -1,0 +1,10 @@
+---ERROR---
+file: sp_logger_unit_test.c
+function: basicLoggerWarningTest
+line: 92
+message: MSG_2
+---WARNING---
+file: sp_logger_unit_test.c
+function: basicLoggerWarningTest
+line: 93
+message: MSG_3

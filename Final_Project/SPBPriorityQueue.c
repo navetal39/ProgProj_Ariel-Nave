@@ -1,9 +1,4 @@
 #include "SPBPriorityQueue.h"
-#include "SPKDTree.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string.h>
 
 struct sp_bp_queue_t{
 	BPQueueElement* arr;
